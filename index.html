@@ -20,31 +20,31 @@
         #header {
             background: #2c3e50;
             color: white;
-            padding: 15px 30px;
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
 
         #header h1 {
-            font-size: 1.5em;
+            font-size: 1.3em;
         }
 
         #stats {
-            font-size: 0.9em;
-            opacity: 0.8;
+            font-size: 0.85em;
+            opacity: 0.9;
         }
 
         #add-btn {
-            padding: 8px 20px;
+            padding: 7px 16px;
             background: #27ae60;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 1em;
+            font-size: 0.9em;
             font-weight: bold;
         }
 
@@ -52,8 +52,61 @@
             background: #219a52;
         }
 
+        #search-bar {
+            background: #34495e;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #search-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            direction: rtl;
+            max-width: 400px;
+        }
+
+        #search-input:focus {
+            outline: 2px solid #3498db;
+        }
+
+        #search-bar label {
+            color: white;
+            font-size: 0.85em;
+        }
+
+        .filter-btn {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .filter-btn.active {
+            opacity: 1;
+        }
+
+        .filter-btn:hover {
+            opacity: 1;
+        }
+
+        .filter-all { background: #95a5a6; }
+        .filter-exclusive { background: #27ae60; }
+        .filter-no-exclusive { background: #9b59b6; }
+        .filter-rental { background: #3498db; }
+        .filter-signed { background: #e74c3c; }
+
         #map {
-            height: calc(100vh - 60px);
+            height: calc(100vh - 100px);
             width: 100%;
         }
 
@@ -189,7 +242,6 @@
             font-size: 0.8em;
             margin-top: 5px;
             color: white;
-            background: #3498db;
         }
 
         .leaflet-popup-content-wrapper {
@@ -234,16 +286,6 @@
             background: #2980b9;
         }
 
-        .saved-note {
-            margin-top: 5px;
-            padding: 6px 10px;
-            background: #fffde7;
-            border-right: 3px solid #f39c12;
-            border-radius: 3px;
-            font-size: 0.85em;
-            white-space: pre-wrap;
-        }
-
         .delete-btn {
             margin-top: 8px;
             padding: 5px 15px;
@@ -283,6 +325,16 @@
         <button id="add-btn" onclick="openAddModal()">➕ הוסף דירה חדשה</button>
         <div id="stats"></div>
     </div>
+    
+    <div id="search-bar">
+        <input type="text" id="search-input" placeholder="🔍 חיפוש לפי כתובת, שכונה, מטפל..." oninput="filterApartments()" />
+        <button class="filter-btn filter-all active" onclick="setFilter('all')">הכל</button>
+        <button class="filter-btn filter-exclusive" onclick="setFilter('בלעדיות')">🟢 בלעדיות</button>
+        <button class="filter-btn filter-no-exclusive" onclick="setFilter('ללא בלעדיות')">🟣 ללא בלעדיות</button>
+        <button class="filter-btn filter-rental" onclick="setFilter('שכירות')">🔵 שכירות</button>
+        <button class="filter-btn filter-signed" onclick="setFilter('חתום')">🔴 חתום</button>
+    </div>
+
     <div id="map"></div>
 
     <!-- Modal להוספת דירה -->
@@ -319,15 +371,23 @@
 
     <script src="leaflet.js"></script>
     <script>
-        // ============================================
-        // הגדרת Google Sheets API
-        // יש להחליף את ה-URL הזה ב-URL של ה-Web App שלך
-        // ============================================
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcax1ViZdIOAvpledWauTDUhJbNkt0jZwUXiEQGe0RQFa-zU2f2cE50flge_2MivXd_A/exec';
 
         let apartments = [];
         let map;
         let markers = {};
+        let currentFilter = 'all';
+
+        // === צבעים לפי סטטוס ===
+        function getStatusColor(status) {
+            if (!status) return '#95a5a6';
+            const s = status.trim();
+            if (s === 'בלעדיות') return '#27ae60';
+            if (s === 'ללא בלעדיות') return '#9b59b6';
+            if (s === 'שכירות') return '#3498db';
+            if (s === 'חתום') return '#e74c3c';
+            return '#95a5a6';
+        }
 
         // === אתחול ===
         async function init() {
@@ -358,39 +418,15 @@
                 }
             } catch(e) {
                 console.log('Error loading from Google Sheets:', e);
-                // נסיון עם JSONP
-                try {
-                    const data = await loadWithJsonp();
-                    if (data && data.length > 0) return data;
-                } catch(e2) {
-                    console.log('JSONP also failed:', e2);
-                }
             }
             
-            // fallback to localStorage
             const saved = localStorage.getItem('shared_apartments');
             return saved ? JSON.parse(saved) : [];
         }
 
-        function loadWithJsonp() {
-            return new Promise((resolve, reject) => {
-                const callbackName = 'jsonpCallback_' + Date.now();
-                window[callbackName] = function(data) {
-                    resolve(data);
-                    delete window[callbackName];
-                    document.head.removeChild(script);
-                };
-                const script = document.createElement('script');
-                script.src = GOOGLE_SCRIPT_URL + '?action=getAll&callback=' + callbackName;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
-
-        // === שמירת דירה חדשה ל-Google Sheets ===
+        // === שמירת דירה חדשה ===
         async function saveNewApartment(apt) {
             localStorage.setItem('shared_apartments', JSON.stringify(apartments));
-            
             try {
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
@@ -399,14 +435,13 @@
                     body: JSON.stringify({ action: 'add', data: apt })
                 });
             } catch(e) {
-                console.log('Error saving to Google Sheets:', e);
+                console.log('Error saving:', e);
             }
         }
 
-        // === מחיקת דירה מ-Google Sheets ===
+        // === מחיקת דירה ===
         async function removeApartment(id) {
             localStorage.setItem('shared_apartments', JSON.stringify(apartments));
-            
             try {
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
@@ -415,11 +450,11 @@
                     body: JSON.stringify({ action: 'delete', id: id })
                 });
             } catch(e) {
-                console.log('Error deleting from Google Sheets:', e);
+                console.log('Error deleting:', e);
             }
         }
 
-        // === עדכון הערה ב-Google Sheets ===
+        // === עדכון הערה ===
         async function updateNote(id, note) {
             try {
                 await fetch(GOOGLE_SCRIPT_URL, {
@@ -434,9 +469,9 @@
         }
 
         // === סמנים ===
-        function createCustomIcon(type) {
+        function createCustomIcon(status) {
             const size = 28;
-            const color = '#2c3e50';
+            const color = getStatusColor(status);
             return L.divIcon({
                 html: `<div style="
                     background-color: ${color};
@@ -455,7 +490,8 @@
         }
 
         function addMarkerToMap(apt) {
-            const icon = createCustomIcon(apt.type);
+            const icon = createCustomIcon(apt.status);
+            const statusColor = getStatusColor(apt.status);
 
             let popupContent = `
                 <div class="apartment-popup">
@@ -468,13 +504,12 @@
             if (apt.handler) {
                 popupContent += `<div class="detail"><strong>בטיפול:</strong> ${apt.handler}</div>`;
             }
-
             if (apt.notes) {
                 popupContent += `<div class="detail"><strong>הערות:</strong> ${apt.notes}</div>`;
             }
 
             popupContent += `
-                    <span class="status-badge">${apt.status}</span>
+                    <span class="status-badge" style="background:${statusColor}">${apt.status}</span>
                     
                     <div class="note-section">
                         <textarea id="note-input-${apt.id}" placeholder="הוסיפי הערה או מלל...">${apt.userNote || ''}</textarea>
@@ -489,6 +524,41 @@
                 .bindPopup(popupContent, { maxWidth: 320 });
             
             markers[apt.id] = marker;
+        }
+
+        // === חיפוש וסינון ===
+        function filterApartments() {
+            const searchText = document.getElementById('search-input').value.trim().toLowerCase();
+            
+            apartments.forEach(apt => {
+                const marker = markers[apt.id];
+                if (!marker) return;
+
+                const matchesSearch = !searchText || 
+                    (apt.address && apt.address.toLowerCase().includes(searchText)) ||
+                    (apt.neighborhood && apt.neighborhood.toLowerCase().includes(searchText)) ||
+                    (apt.handler && apt.handler.toLowerCase().includes(searchText)) ||
+                    (apt.type && apt.type.toLowerCase().includes(searchText)) ||
+                    (apt.notes && apt.notes.toLowerCase().includes(searchText));
+
+                const matchesFilter = currentFilter === 'all' || 
+                    (apt.status && apt.status.trim() === currentFilter);
+
+                if (matchesSearch && matchesFilter) {
+                    marker.addTo(map);
+                } else {
+                    map.removeLayer(marker);
+                }
+            });
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            filterApartments();
         }
 
         // === שמירת הערה ===
@@ -538,15 +608,10 @@
         async function geocodeAddress(address) {
             const query = encodeURIComponent(address + ', ירושלים, ישראל');
             const url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`;
-            
             const response = await fetch(url);
             const data = await response.json();
-            
             if (data && data.length > 0) {
-                return {
-                    lat: parseFloat(data[0].lat),
-                    lng: parseFloat(data[0].lon)
-                };
+                return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
             }
             return null;
         }
@@ -559,16 +624,12 @@
             const handler = document.getElementById('input-handler').value.trim();
             const notes = document.getElementById('input-notes').value.trim();
 
-            if (!address) {
-                alert('נא להזין כתובת');
-                return;
-            }
+            if (!address) { alert('נא להזין כתובת'); return; }
 
             document.getElementById('loading-msg').classList.add('active');
 
             try {
                 const coords = await geocodeAddress(address);
-                
                 if (!coords) {
                     alert('לא הצלחתי למצוא את הכתובת. נסי לכתוב אותה בצורה אחרת.');
                     document.getElementById('loading-msg').classList.remove('active');
@@ -577,26 +638,19 @@
 
                 const newApt = {
                     id: Date.now().toString(),
-                    address: address,
-                    neighborhood: neighborhood || 'ירושלים',
-                    lat: coords.lat,
-                    lng: coords.lng,
-                    type: type || 'דירה',
-                    status: status || 'בלעדיות',
-                    handler: handler,
-                    notes: notes,
-                    userNote: ''
+                    address, neighborhood: neighborhood || 'ירושלים',
+                    lat: coords.lat, lng: coords.lng,
+                    type: type || 'דירה', status: status || 'בלעדיות',
+                    handler, notes, userNote: ''
                 };
 
                 apartments.push(newApt);
                 addMarkerToMap(newApt);
                 await saveNewApartment(newApt);
-
                 map.setView([coords.lat, coords.lng], 16);
                 updateStats();
                 closeAddModal();
                 alert('הדירה נוספה בהצלחה! ✓');
-
             } catch (error) {
                 alert('שגיאה בחיפוש הכתובת. בדקי את חיבור האינטרנט ונסי שוב.');
                 document.getElementById('loading-msg').classList.remove('active');
@@ -605,10 +659,14 @@
 
         // === סטטיסטיקות ===
         function updateStats() {
-            document.getElementById('stats').innerHTML = `סה"כ: ${apartments.length} נכסים`;
+            const exclusive = apartments.filter(a => a.status && a.status.trim() === 'בלעדיות').length;
+            const noExclusive = apartments.filter(a => a.status && a.status.trim() === 'ללא בלעדיות').length;
+            const rental = apartments.filter(a => a.status && a.status.trim() === 'שכירות').length;
+            const signed = apartments.filter(a => a.status && a.status.trim() === 'חתום').length;
+            document.getElementById('stats').innerHTML = 
+                `סה"כ: ${apartments.length} | 🟢${exclusive} | 🟣${noExclusive} | 🔵${rental} | 🔴${signed}`;
         }
 
-        // === הפעלה ===
         init();
     </script>
 </body>
