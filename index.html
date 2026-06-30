@@ -20,16 +20,16 @@
         #header {
             background: #2c3e50;
             color: white;
-            padding: 12px 20px;
+            padding: 8px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 5px;
         }
 
         #header h1 {
-            font-size: 1.3em;
+            font-size: 1.1em;
         }
 
         #stats {
@@ -54,21 +54,23 @@
 
         #search-bar {
             background: #34495e;
-            padding: 8px 15px;
+            padding: 6px 10px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
+            gap: 6px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
         }
 
         #search-input {
-            flex: 1;
-            min-width: 150px;
-            padding: 8px 12px;
+            min-width: 100px;
+            width: 40%;
+            padding: 6px 10px;
             border: none;
             border-radius: 5px;
-            font-size: 0.9em;
+            font-size: 0.85em;
             direction: rtl;
+            flex-shrink: 0;
         }
 
         #search-input:focus {
@@ -77,20 +79,21 @@
 
         .filters-row {
             display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
+            gap: 4px;
+            flex-shrink: 0;
         }
 
         .filter-btn {
-            padding: 5px 12px;
+            padding: 4px 8px;
             border: none;
             border-radius: 12px;
             cursor: pointer;
-            font-size: 0.8em;
+            font-size: 0.7em;
             font-weight: bold;
             color: white;
             opacity: 0.6;
             transition: opacity 0.2s;
+            white-space: nowrap;
         }
 
         .filter-btn.active {
@@ -108,35 +111,49 @@
         .filter-signed { background: #e74c3c; }
 
         #map {
-            height: calc(100vh - 100px);
+            height: calc(100vh - 85px);
             width: 100%;
         }
 
         @media (max-width: 600px) {
             #header {
-                padding: 10px 12px;
-            }
-            #header h1 {
-                font-size: 1em;
-                width: 100%;
-            }
-            #map {
-                height: calc(100vh - 130px);
-            }
-            .filter-btn {
-                padding: 4px 8px;
-                font-size: 0.75em;
-            }
-            #search-input {
-                font-size: 0.85em;
                 padding: 6px 10px;
             }
+            #header h1 {
+                font-size: 0.9em;
+            }
+            #stats {
+                font-size: 0.7em;
+            }
             #add-btn {
-                padding: 6px 12px;
+                padding: 5px 10px;
+                font-size: 0.75em;
+            }
+            #search-bar {
+                padding: 5px 8px;
+                gap: 4px;
+            }
+            #search-input {
+                width: 35%;
+                min-width: 80px;
+                padding: 5px 8px;
                 font-size: 0.8em;
+            }
+            .filter-btn {
+                padding: 3px 6px;
+                font-size: 0.65em;
+            }
+            #map {
+                height: calc(100vh - 75px);
             }
             .apartment-popup {
                 min-width: 200px;
+            }
+            .apartment-popup h3 {
+                font-size: 0.95em;
+            }
+            .apartment-popup .detail {
+                font-size: 0.8em;
             }
         }
 
