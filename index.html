@@ -319,72 +319,93 @@
 
     <script src="leaflet.js"></script>
     <script>
-        // === אחסון נתונים מקומי ===
-
-        // נתוני ברירת מחדל
-        const defaultApartments = [
-            { id: 1, address: "ארלוזורוב 13", neighborhood: "רחביה", lat: 31.7725, lng: 35.2135, type: "פנטהאוז", status: "בלעדיות", handler: "מירי וליסה", notes: "" },
-            { id: 2, address: "ארלוזורוב 13", neighborhood: "רחביה", lat: 31.7726, lng: 35.2137, type: "דירה רגילה (יזם)", status: "בלעדיות", handler: "מירי וליסה", notes: "" },
-            { id: 3, address: "ארלוזורוב, דירה 9", neighborhood: "רחביה", lat: 31.7724, lng: 35.2133, type: "דירה", status: "בלעדיות", handler: "מיכאל", notes: "" },
-            { id: 4, address: "אברבנאל 2", neighborhood: "רחביה", lat: 31.7710, lng: 35.2115, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 5, address: "ראובן, בקעה", neighborhood: "בקעה", lat: 31.7590, lng: 35.2290, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 6, address: "ברכיהו 3", neighborhood: "ירושלים", lat: 31.7635, lng: 35.2255, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 7, address: "אבן שפרוט 16", neighborhood: "רחביה", lat: 31.7700, lng: 35.2100, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 8, address: "איתמר בן אבי 18", neighborhood: "רחביה", lat: 31.7715, lng: 35.2090, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 9, address: "עמק רפאים 55", neighborhood: "עמק רפאים", lat: 31.7580, lng: 35.2210, type: "5 דירות", status: "בלעדיות", handler: "", notes: "5 דירות" },
-            { id: 10, address: "פרויקט בית הערבה", neighborhood: "ירושלים", lat: 31.7650, lng: 35.2300, type: "פרויקט", status: "בלעדיות", handler: "מוישי", notes: "נותרו 3 דירות" },
-            { id: 11, address: "בן מימון 16", neighborhood: "רחביה", lat: 31.7695, lng: 35.2125, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 12, address: "אוסישקין 41", neighborhood: "רחביה", lat: 31.7735, lng: 35.2110, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 13, address: "אגריפס 8", neighborhood: "מרכז העיר", lat: 31.7800, lng: 35.2170, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 14, address: "הפלמ\"ח", neighborhood: "טלביה/קטמון", lat: 31.7620, lng: 35.2060, type: "4 דירות", status: "בלעדיות", handler: "", notes: "4 דירות" },
-            { id: 15, address: "ברק 3, בקעה", neighborhood: "בקעה", lat: 31.7575, lng: 35.2280, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 16, address: "הרן 18", neighborhood: "ירושלים", lat: 31.7660, lng: 35.2150, type: "פנטהאוז", status: "בלעדיות", handler: "", notes: "" },
-            { id: 17, address: "הרן 18", neighborhood: "ירושלים", lat: 31.7658, lng: 35.2152, type: "דירת גן", status: "בלעדיות", handler: "", notes: "" },
-            { id: 18, address: "נחלת צדוק 4", neighborhood: "ירושלים", lat: 31.7640, lng: 35.2240, type: "דירה", status: "שכירות", handler: "", notes: "שכירות" },
-            { id: 19, address: "גדעון 19, בקעה", neighborhood: "בקעה", lat: 31.7585, lng: 35.2270, type: "דירות 4-5-6", status: "בלעדיות", handler: "", notes: "דירות 4-5-6" },
-            { id: 20, address: "חיל נשים", neighborhood: "ירושלים", lat: 31.7670, lng: 35.2190, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 21, address: "בית גבע 10", neighborhood: "ירושלים", lat: 31.7680, lng: 35.2020, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 22, address: "יצחק בן דור 11", neighborhood: "ירושלים", lat: 31.7645, lng: 35.2030, type: "פנטהאוז", status: "בלעדיות", handler: "", notes: "" },
-            { id: 23, address: "יצחק בן דור 9", neighborhood: "ירושלים", lat: 31.7643, lng: 35.2028, type: "דירת גן", status: "ללא בלעדיות", handler: "", notes: "" },
-            { id: 24, address: "ספיריט, דירה 302", neighborhood: "ירושלים", lat: 31.7690, lng: 35.2180, type: "דירה", status: "ללא בלעדיות", handler: "", notes: "" },
-            { id: 25, address: "הרב ברלין 30", neighborhood: "ירושלים", lat: 31.7750, lng: 35.2160, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 26, address: "סמולנסקין 1", neighborhood: "רחביה", lat: 31.7718, lng: 35.2105, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
-            { id: 27, address: "רמב\"ן 59", neighborhood: "רחביה", lat: 31.7705, lng: 35.2080, type: "דירה", status: "חתום", handler: "", notes: "" },
-            { id: 28, address: "רמב\"ן 37", neighborhood: "רחביה", lat: 31.7708, lng: 35.2085, type: "דירה", status: "בלעדיות", handler: "", notes: "137 מ\"ר | 3 חדרי שינה | מחיר: 16.5 מיליון ₪" },
-            { id: 29, address: "אוסישקין 21", neighborhood: "רחביה", lat: 31.7738, lng: 35.2108, type: "דירה", status: "ללא בלעדיות", handler: "", notes: "3.5 חדרים | מרפסת סוכה | מחיר: 10 מיליון ₪" },
-            { id: 30, address: "נחלת צדוק 4", neighborhood: "ירושלים", lat: 31.7642, lng: 35.2242, type: "דירה", status: "בלעדיות", handler: "", notes: "" }
-        ];
+        // ============================================
+        // הגדרת Google Sheets API
+        // יש להחליף את ה-URL הזה ב-URL של ה-Web App שלך
+        // ============================================
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcax1ViZdIOAvpledWauTDUhJbNkt0jZwUXiEQGe0RQFa-zU2f2cE50flge_2MivXd_A/exec';
 
         let apartments = [];
         let map;
+        let markers = {};
 
         // === אתחול ===
         async function init() {
-            // אתחול המפה
             map = L.map('map', { zoomControl: true }).setView([31.7683, 35.2150], 14);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
 
-            // טעינת נתונים
             apartments = await loadData();
-            
-            // הצגת סמנים
             apartments.forEach(apt => addMarkerToMap(apt));
             updateStats();
 
-            // הסרת מסך טעינה
             document.getElementById('loading-screen').style.display = 'none';
         }
 
-        // === טעינה ושמירת נתונים ===
+        // === טעינת נתונים מ-Google Sheets ===
         async function loadData() {
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getAll');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        return data;
+                    }
+                }
+            } catch(e) {
+                console.log('Error loading from Google Sheets:', e);
+            }
+            
+            // fallback to localStorage
             const saved = localStorage.getItem('shared_apartments');
-            return saved ? JSON.parse(saved) : defaultApartments;
+            return saved ? JSON.parse(saved) : [];
         }
 
-        async function saveData() {
+        // === שמירת דירה חדשה ל-Google Sheets ===
+        async function saveNewApartment(apt) {
             localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+            
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'add', data: apt })
+                });
+            } catch(e) {
+                console.log('Error saving to Google Sheets:', e);
+            }
+        }
+
+        // === מחיקת דירה מ-Google Sheets ===
+        async function removeApartment(id) {
+            localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+            
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete', id: id })
+                });
+            } catch(e) {
+                console.log('Error deleting from Google Sheets:', e);
+            }
+        }
+
+        // === עדכון הערה ב-Google Sheets ===
+        async function updateNote(id, note) {
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'updateNote', id: id, note: note })
+                });
+            } catch(e) {
+                console.log('Error updating note:', e);
+            }
         }
 
         // === סמנים ===
@@ -432,9 +453,9 @@
                     
                     <div class="note-section">
                         <textarea id="note-input-${apt.id}" placeholder="הוסיפי הערה או מלל...">${apt.userNote || ''}</textarea>
-                        <button class="save-note-btn" onclick="saveNoteForApt(${apt.id})">💾 שמור הערה</button>
+                        <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 שמור הערה</button>
                     </div>
-                    <button class="delete-btn" onclick="deleteApartment(${apt.id})">🗑️ מחק נכס</button>
+                    <button class="delete-btn" onclick="deleteApartment('${apt.id}')">🗑️ מחק נכס</button>
                 </div>
             `;
 
@@ -442,7 +463,7 @@
                 .addTo(map)
                 .bindPopup(popupContent, { maxWidth: 320 });
             
-            apt._marker = marker;
+            markers[apt.id] = marker;
         }
 
         // === שמירת הערה ===
@@ -450,10 +471,10 @@
             const textarea = document.getElementById(`note-input-${id}`);
             const text = textarea.value.trim();
             
-            const apt = apartments.find(a => a.id === id);
+            const apt = apartments.find(a => a.id == id);
             if (apt) {
                 apt.userNote = text;
-                await saveData();
+                await updateNote(id, text);
                 alert('ההערה נשמרה! ✓');
             }
         }
@@ -462,13 +483,13 @@
         async function deleteApartment(id) {
             if (!confirm('למחוק את הנכס הזה מהמפה?')) return;
             
-            const apt = apartments.find(a => a.id === id);
-            if (apt && apt._marker) {
-                map.removeLayer(apt._marker);
+            if (markers[id]) {
+                map.removeLayer(markers[id]);
+                delete markers[id];
             }
             
-            apartments = apartments.filter(a => a.id !== id);
-            await saveData();
+            apartments = apartments.filter(a => a.id != id);
+            await removeApartment(id);
             updateStats();
             alert('הנכס נמחק! ✓');
         }
@@ -530,7 +551,7 @@
                 }
 
                 const newApt = {
-                    id: Date.now(),
+                    id: Date.now().toString(),
                     address: address,
                     neighborhood: neighborhood || 'ירושלים',
                     lat: coords.lat,
@@ -544,7 +565,7 @@
 
                 apartments.push(newApt);
                 addMarkerToMap(newApt);
-                await saveData();
+                await saveNewApartment(newApt);
 
                 map.setView([coords.lat, coords.lng], 16);
                 updateStats();
