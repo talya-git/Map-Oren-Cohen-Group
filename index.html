@@ -57,7 +57,6 @@
             width: 100%;
         }
 
-        /* Modal */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -100,7 +99,7 @@
             color: #555;
         }
 
-        .modal input, .modal select, .modal textarea {
+        .modal input, .modal textarea {
             width: 100%;
             padding: 8px 12px;
             border: 1px solid #ddd;
@@ -183,26 +182,15 @@
             color: #555;
         }
 
-        .apartment-popup .price {
-            font-size: 1.2em;
-            color: #27ae60;
-            font-weight: bold;
-            margin-top: 8px;
-        }
-
-        .apartment-popup .status {
+        .apartment-popup .status-badge {
             display: inline-block;
             padding: 3px 10px;
             border-radius: 12px;
             font-size: 0.8em;
             margin-top: 5px;
             color: white;
+            background: #3498db;
         }
-
-        .status-exclusive { background: #27ae60; }
-        .status-no-exclusive { background: #9b59b6; }
-        .status-rental { background: #3498db; }
-        .status-signed { background: #e74c3c; }
 
         .leaflet-popup-content-wrapper {
             border-radius: 10px;
@@ -258,21 +246,38 @@
 
         .delete-btn {
             margin-top: 8px;
-            padding: 4px 12px;
+            padding: 5px 15px;
             background: #e74c3c;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 0.8em;
+            font-size: 0.85em;
         }
 
         .delete-btn:hover {
             background: #c0392b;
         }
+
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.3em;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
+    <div id="loading-screen">🔄 טוען מפה...</div>
+
     <div id="header">
         <h1>🏠 מפת דירות - ירושלים</h1>
         <button id="add-btn" onclick="openAddModal()">➕ הוסף דירה חדשה</button>
@@ -285,27 +290,17 @@
         <div class="modal">
             <h2>➕ הוספת דירה חדשה</h2>
             
-            <label>כתובת (רחוב ומספר, ירושלים)</label>
+            <label>כתובת (רחוב ומספר)</label>
             <input type="text" id="input-address" placeholder="לדוגמה: קינג ג'ורג' 25, ירושלים" />
             
             <label>שכונה</label>
             <input type="text" id="input-neighborhood" placeholder="לדוגמה: רחביה" />
 
             <label>סוג נכס</label>
-            <select id="input-type">
-                <option value="דירה">דירה</option>
-                <option value="פנטהאוז">פנטהאוז</option>
-                <option value="דירת גן">דירת גן</option>
-                <option value="פרויקט">פרויקט</option>
-            </select>
+            <input type="text" id="input-type" placeholder="לדוגמה: דירה, פנטהאוז, דירת גן..." />
 
             <label>סטטוס</label>
-            <select id="input-status">
-                <option value="exclusive">בלעדיות</option>
-                <option value="no-exclusive">ללא בלעדיות</option>
-                <option value="rental">שכירות</option>
-                <option value="signed">חתום</option>
-            </select>
+            <input type="text" id="input-status" placeholder="לדוגמה: בלעדיות, ללא בלעדיות, שכירות..." />
 
             <label>בטיפול של</label>
             <input type="text" id="input-handler" placeholder="שם המטפל/ת" />
@@ -324,107 +319,78 @@
 
     <script src="leaflet.js"></script>
     <script>
-        // === טעינת נתונים מ-localStorage ===
-        function getSavedNotes() {
-            const saved = localStorage.getItem('apartment_notes');
-            return saved ? JSON.parse(saved) : {};
-        }
+        // === אחסון נתונים מקומי ===
 
-        function saveNote(id, text) {
-            const notes = getSavedNotes();
-            notes[id] = text;
-            localStorage.setItem('apartment_notes', JSON.stringify(notes));
-        }
-
-        function getSavedApartments() {
-            const saved = localStorage.getItem('added_apartments');
-            return saved ? JSON.parse(saved) : [];
-        }
-
-        function saveApartments(apts) {
-            localStorage.setItem('added_apartments', JSON.stringify(apts));
-        }
-
-        function deleteApartment(id) {
-            if (!confirm('למחוק את הנכס הזה?')) return;
-            let added = getSavedApartments();
-            added = added.filter(a => a.id !== id);
-            saveApartments(added);
-            location.reload();
-        }
-
-        const savedNotes = getSavedNotes();
-
-        const apartments = [
-            { id: 1, address: "ארלוזורוב 13", neighborhood: "רחביה", lat: 31.7725, lng: 35.2135, type: "פנטהאוז", status: "exclusive", handler: "מירי וליסה", notes: "" },
-            { id: 2, address: "ארלוזורוב 13", neighborhood: "רחביה", lat: 31.7726, lng: 35.2137, type: "דירה רגילה (יזם)", status: "exclusive", handler: "מירי וליסה", notes: "" },
-            { id: 3, address: "ארלוזורוב, דירה 9", neighborhood: "רחביה", lat: 31.7724, lng: 35.2133, type: "דירה", status: "exclusive", handler: "מיכאל", notes: "" },
-            { id: 4, address: "אברבנאל 2", neighborhood: "רחביה", lat: 31.7710, lng: 35.2115, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 5, address: "ראובן, בקעה", neighborhood: "בקעה", lat: 31.7590, lng: 35.2290, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 6, address: "ברכיהו 3", neighborhood: "ירושלים", lat: 31.7635, lng: 35.2255, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 7, address: "אבן שפרוט 16", neighborhood: "רחביה", lat: 31.7700, lng: 35.2100, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 8, address: "איתמר בן אבי 18", neighborhood: "רחביה", lat: 31.7715, lng: 35.2090, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 9, address: "עמק רפאים 55", neighborhood: "עמק רפאים", lat: 31.7580, lng: 35.2210, type: "5 דירות", status: "exclusive", handler: "", notes: "5 דירות" },
-            { id: 10, address: "פרויקט בית הערבה", neighborhood: "ירושלים", lat: 31.7650, lng: 35.2300, type: "פרויקט", status: "exclusive", handler: "מוישי", notes: "נותרו 3 דירות" },
-            { id: 11, address: "בן מימון 16", neighborhood: "רחביה", lat: 31.7695, lng: 35.2125, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 12, address: "אוסישקין 41", neighborhood: "רחביה", lat: 31.7735, lng: 35.2110, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 13, address: "אגריפס 8", neighborhood: "מרכז העיר", lat: 31.7800, lng: 35.2170, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 14, address: "הפלמ\"ח", neighborhood: "טלביה/קטמון", lat: 31.7620, lng: 35.2060, type: "4 דירות", status: "exclusive", handler: "", notes: "4 דירות" },
-            { id: 15, address: "ברק 3, בקעה", neighborhood: "בקעה", lat: 31.7575, lng: 35.2280, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 16, address: "הרן 18", neighborhood: "ירושלים", lat: 31.7660, lng: 35.2150, type: "פנטהאוז", status: "exclusive", handler: "", notes: "" },
-            { id: 17, address: "הרן 18", neighborhood: "ירושלים", lat: 31.7658, lng: 35.2152, type: "דירת גן", status: "exclusive", handler: "", notes: "" },
-            { id: 18, address: "נחלת צדוק 4", neighborhood: "ירושלים", lat: 31.7640, lng: 35.2240, type: "דירה", status: "rental", handler: "", notes: "שכירות" },
-            { id: 19, address: "גדעון 19, בקעה", neighborhood: "בקעה", lat: 31.7585, lng: 35.2270, type: "דירות 4-5-6", status: "exclusive", handler: "", notes: "דירות 4-5-6" },
-            { id: 20, address: "חיל נשים", neighborhood: "ירושלים", lat: 31.7670, lng: 35.2190, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 21, address: "בית גבע 10", neighborhood: "ירושלים", lat: 31.7680, lng: 35.2020, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 22, address: "יצחק בן דור 11", neighborhood: "ירושלים", lat: 31.7645, lng: 35.2030, type: "פנטהאוז", status: "exclusive", handler: "", notes: "" },
-            { id: 23, address: "יצחק בן דור 9", neighborhood: "ירושלים", lat: 31.7643, lng: 35.2028, type: "דירת גן", status: "no-exclusive", handler: "", notes: "ללא בלעדיות" },
-            { id: 24, address: "ספיריט, דירה 302", neighborhood: "ירושלים", lat: 31.7690, lng: 35.2180, type: "דירה", status: "no-exclusive", handler: "", notes: "ללא בלעדיות" },
-            { id: 25, address: "הרב ברלין 30", neighborhood: "ירושלים", lat: 31.7750, lng: 35.2160, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 26, address: "סמולנסקין 1", neighborhood: "רחביה", lat: 31.7718, lng: 35.2105, type: "דירה", status: "exclusive", handler: "", notes: "" },
-            { id: 27, address: "רמב\"ן 59", neighborhood: "רחביה", lat: 31.7705, lng: 35.2080, type: "דירה", status: "signed", handler: "", notes: "חתום" },
-            { id: 28, address: "רמב\"ן 37", neighborhood: "רחביה", lat: 31.7708, lng: 35.2085, type: "דירה", status: "exclusive", handler: "", notes: "137 מ\"ר | 3 חדרי שינה | מחיר: 16.5 מיליון ₪", price: "16,500,000", rooms: "3 חדרי שינה", size: "137 מ\"ר" },
-            { id: 29, address: "אוסישקין 21", neighborhood: "רחביה", lat: 31.7738, lng: 35.2108, type: "דירה", status: "no-exclusive", handler: "", notes: "ללא בלעדיות | 3.5 חדרים | מרפסת סוכה | מחיר: 10 מיליון ₪", price: "10,000,000", rooms: "3.5 חדרים", extras: "מרפסת סוכה" },
-            { id: 30, address: "נחלת צדוק 4", neighborhood: "ירושלים", lat: 31.7642, lng: 35.2242, type: "דירה", status: "exclusive", handler: "", notes: "" }
+        // נתוני ברירת מחדל
+        const defaultApartments = [
+            { id: 1, address: "ארלוזורוב 13", neighborhood: "רחביה", lat: 31.7725, lng: 35.2135, type: "פנטהאוז", status: "בלעדיות", handler: "מירי וליסה", notes: "" },
+            { id: 2, address: "ארלוזורוב 13", neighborhood: "רחביה", lat: 31.7726, lng: 35.2137, type: "דירה רגילה (יזם)", status: "בלעדיות", handler: "מירי וליסה", notes: "" },
+            { id: 3, address: "ארלוזורוב, דירה 9", neighborhood: "רחביה", lat: 31.7724, lng: 35.2133, type: "דירה", status: "בלעדיות", handler: "מיכאל", notes: "" },
+            { id: 4, address: "אברבנאל 2", neighborhood: "רחביה", lat: 31.7710, lng: 35.2115, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 5, address: "ראובן, בקעה", neighborhood: "בקעה", lat: 31.7590, lng: 35.2290, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 6, address: "ברכיהו 3", neighborhood: "ירושלים", lat: 31.7635, lng: 35.2255, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 7, address: "אבן שפרוט 16", neighborhood: "רחביה", lat: 31.7700, lng: 35.2100, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 8, address: "איתמר בן אבי 18", neighborhood: "רחביה", lat: 31.7715, lng: 35.2090, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 9, address: "עמק רפאים 55", neighborhood: "עמק רפאים", lat: 31.7580, lng: 35.2210, type: "5 דירות", status: "בלעדיות", handler: "", notes: "5 דירות" },
+            { id: 10, address: "פרויקט בית הערבה", neighborhood: "ירושלים", lat: 31.7650, lng: 35.2300, type: "פרויקט", status: "בלעדיות", handler: "מוישי", notes: "נותרו 3 דירות" },
+            { id: 11, address: "בן מימון 16", neighborhood: "רחביה", lat: 31.7695, lng: 35.2125, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 12, address: "אוסישקין 41", neighborhood: "רחביה", lat: 31.7735, lng: 35.2110, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 13, address: "אגריפס 8", neighborhood: "מרכז העיר", lat: 31.7800, lng: 35.2170, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 14, address: "הפלמ\"ח", neighborhood: "טלביה/קטמון", lat: 31.7620, lng: 35.2060, type: "4 דירות", status: "בלעדיות", handler: "", notes: "4 דירות" },
+            { id: 15, address: "ברק 3, בקעה", neighborhood: "בקעה", lat: 31.7575, lng: 35.2280, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 16, address: "הרן 18", neighborhood: "ירושלים", lat: 31.7660, lng: 35.2150, type: "פנטהאוז", status: "בלעדיות", handler: "", notes: "" },
+            { id: 17, address: "הרן 18", neighborhood: "ירושלים", lat: 31.7658, lng: 35.2152, type: "דירת גן", status: "בלעדיות", handler: "", notes: "" },
+            { id: 18, address: "נחלת צדוק 4", neighborhood: "ירושלים", lat: 31.7640, lng: 35.2240, type: "דירה", status: "שכירות", handler: "", notes: "שכירות" },
+            { id: 19, address: "גדעון 19, בקעה", neighborhood: "בקעה", lat: 31.7585, lng: 35.2270, type: "דירות 4-5-6", status: "בלעדיות", handler: "", notes: "דירות 4-5-6" },
+            { id: 20, address: "חיל נשים", neighborhood: "ירושלים", lat: 31.7670, lng: 35.2190, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 21, address: "בית גבע 10", neighborhood: "ירושלים", lat: 31.7680, lng: 35.2020, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 22, address: "יצחק בן דור 11", neighborhood: "ירושלים", lat: 31.7645, lng: 35.2030, type: "פנטהאוז", status: "בלעדיות", handler: "", notes: "" },
+            { id: 23, address: "יצחק בן דור 9", neighborhood: "ירושלים", lat: 31.7643, lng: 35.2028, type: "דירת גן", status: "ללא בלעדיות", handler: "", notes: "" },
+            { id: 24, address: "ספיריט, דירה 302", neighborhood: "ירושלים", lat: 31.7690, lng: 35.2180, type: "דירה", status: "ללא בלעדיות", handler: "", notes: "" },
+            { id: 25, address: "הרב ברלין 30", neighborhood: "ירושלים", lat: 31.7750, lng: 35.2160, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 26, address: "סמולנסקין 1", neighborhood: "רחביה", lat: 31.7718, lng: 35.2105, type: "דירה", status: "בלעדיות", handler: "", notes: "" },
+            { id: 27, address: "רמב\"ן 59", neighborhood: "רחביה", lat: 31.7705, lng: 35.2080, type: "דירה", status: "חתום", handler: "", notes: "" },
+            { id: 28, address: "רמב\"ן 37", neighborhood: "רחביה", lat: 31.7708, lng: 35.2085, type: "דירה", status: "בלעדיות", handler: "", notes: "137 מ\"ר | 3 חדרי שינה | מחיר: 16.5 מיליון ₪" },
+            { id: 29, address: "אוסישקין 21", neighborhood: "רחביה", lat: 31.7738, lng: 35.2108, type: "דירה", status: "ללא בלעדיות", handler: "", notes: "3.5 חדרים | מרפסת סוכה | מחיר: 10 מיליון ₪" },
+            { id: 30, address: "נחלת צדוק 4", neighborhood: "ירושלים", lat: 31.7642, lng: 35.2242, type: "דירה", status: "בלעדיות", handler: "", notes: "" }
         ];
 
-        // הוספת דירות שנשמרו ב-localStorage
-        const addedApartments = getSavedApartments();
-        apartments.push(...addedApartments);
+        let apartments = [];
+        let map;
 
-        // === אתחול המפה ===
-        const map = L.map('map', {
-            zoomControl: true
-        }).setView([31.7683, 35.2150], 14);
+        // === אתחול ===
+        async function init() {
+            // אתחול המפה
+            map = L.map('map', { zoomControl: true }).setView([31.7683, 35.2150], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+            // טעינת נתונים
+            apartments = await loadData();
+            
+            // הצגת סמנים
+            apartments.forEach(apt => addMarkerToMap(apt));
+            updateStats();
 
-        // === צבעי סמנים לפי סטטוס ===
-        function getMarkerColor(status) {
-            switch(status) {
-                case 'exclusive': return '#27ae60';
-                case 'no-exclusive': return '#9b59b6';
-                case 'rental': return '#3498db';
-                case 'signed': return '#e74c3c';
-                default: return '#27ae60';
-            }
+            // הסרת מסך טעינה
+            document.getElementById('loading-screen').style.display = 'none';
         }
 
-        function getStatusText(status) {
-            switch(status) {
-                case 'exclusive': return 'בלעדיות';
-                case 'no-exclusive': return 'ללא בלעדיות';
-                case 'rental': return 'שכירות';
-                case 'signed': return 'חתום';
-                default: return '';
-            }
+        // === טעינה ושמירת נתונים ===
+        async function loadData() {
+            const saved = localStorage.getItem('shared_apartments');
+            return saved ? JSON.parse(saved) : defaultApartments;
         }
 
-        function createCustomIcon(color, type) {
-            const isProject = type.includes('דירות') || type.includes('פרויקט');
-            const size = isProject ? 35 : 28;
+        async function saveData() {
+            localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+        }
+
+        // === סמנים ===
+        function createCustomIcon(type) {
+            const size = 28;
+            const color = '#2c3e50';
             return L.divIcon({
                 html: `<div style="
                     background-color: ${color};
@@ -442,38 +408,19 @@
             });
         }
 
-        // === הוספת סמנים למפה ===
         function addMarkerToMap(apt) {
-            const color = getMarkerColor(apt.status);
-            const icon = createCustomIcon(color, apt.type);
-            const existingNote = savedNotes[apt.id] || '';
-            const isAdded = apt.id > 1000; // דירות שנוספו ידנית
+            const icon = createCustomIcon(apt.type);
 
             let popupContent = `
                 <div class="apartment-popup">
                     <h3>${apt.address}</h3>
                     <div class="detail"><strong>שכונה:</strong> ${apt.neighborhood}</div>
                     <div class="detail"><strong>סוג:</strong> ${apt.type}</div>
+                    <div class="detail"><strong>סטטוס:</strong> ${apt.status}</div>
             `;
 
             if (apt.handler) {
                 popupContent += `<div class="detail"><strong>בטיפול:</strong> ${apt.handler}</div>`;
-            }
-
-            if (apt.price) {
-                popupContent += `<div class="detail"><strong>מחיר:</strong> ₪${apt.price}</div>`;
-            }
-
-            if (apt.rooms) {
-                popupContent += `<div class="detail"><strong>חדרים:</strong> ${apt.rooms}</div>`;
-            }
-
-            if (apt.size) {
-                popupContent += `<div class="detail"><strong>שטח:</strong> ${apt.size}</div>`;
-            }
-
-            if (apt.extras) {
-                popupContent += `<div class="detail"><strong>תוספות:</strong> ${apt.extras}</div>`;
             }
 
             if (apt.notes) {
@@ -481,48 +428,52 @@
             }
 
             popupContent += `
-                    <span class="status status-${apt.status}">${getStatusText(apt.status)}</span>
+                    <span class="status-badge">${apt.status}</span>
                     
                     <div class="note-section">
-                        ${existingNote ? `<div class="saved-note" id="saved-note-${apt.id}">${existingNote}</div>` : ''}
-                        <textarea id="note-input-${apt.id}" placeholder="הוסיפי הערה או מלל...">${existingNote}</textarea>
+                        <textarea id="note-input-${apt.id}" placeholder="הוסיפי הערה או מלל...">${apt.userNote || ''}</textarea>
                         <button class="save-note-btn" onclick="saveNoteForApt(${apt.id})">💾 שמור הערה</button>
                     </div>
-                    ${isAdded ? `<button class="delete-btn" onclick="deleteApartment(${apt.id})">🗑️ מחק נכס</button>` : ''}
+                    <button class="delete-btn" onclick="deleteApartment(${apt.id})">🗑️ מחק נכס</button>
                 </div>
             `;
 
-            L.marker([apt.lat, apt.lng], { icon: icon })
+            const marker = L.marker([apt.lat, apt.lng], { icon: icon })
                 .addTo(map)
                 .bindPopup(popupContent, { maxWidth: 320 });
+            
+            apt._marker = marker;
         }
 
-        apartments.forEach(apt => addMarkerToMap(apt));
-
-        // === פונקציה לשמירת הערה ===
-        function saveNoteForApt(id) {
+        // === שמירת הערה ===
+        async function saveNoteForApt(id) {
             const textarea = document.getElementById(`note-input-${id}`);
             const text = textarea.value.trim();
-            saveNote(id, text);
             
-            let savedDiv = document.getElementById(`saved-note-${id}`);
-            if (text) {
-                if (!savedDiv) {
-                    const noteSection = textarea.parentElement;
-                    savedDiv = document.createElement('div');
-                    savedDiv.className = 'saved-note';
-                    savedDiv.id = `saved-note-${id}`;
-                    noteSection.insertBefore(savedDiv, textarea);
-                }
-                savedDiv.textContent = text;
-            } else if (savedDiv) {
-                savedDiv.remove();
+            const apt = apartments.find(a => a.id === id);
+            if (apt) {
+                apt.userNote = text;
+                await saveData();
+                alert('ההערה נשמרה! ✓');
             }
-            
-            alert('ההערה נשמרה! ✓');
         }
 
-        // === Modal להוספת דירה ===
+        // === מחיקת דירה ===
+        async function deleteApartment(id) {
+            if (!confirm('למחוק את הנכס הזה מהמפה?')) return;
+            
+            const apt = apartments.find(a => a.id === id);
+            if (apt && apt._marker) {
+                map.removeLayer(apt._marker);
+            }
+            
+            apartments = apartments.filter(a => a.id !== id);
+            await saveData();
+            updateStats();
+            alert('הנכס נמחק! ✓');
+        }
+
+        // === Modal ===
         function openAddModal() {
             document.getElementById('modal-overlay').classList.add('active');
         }
@@ -531,6 +482,8 @@
             document.getElementById('modal-overlay').classList.remove('active');
             document.getElementById('input-address').value = '';
             document.getElementById('input-neighborhood').value = '';
+            document.getElementById('input-type').value = '';
+            document.getElementById('input-status').value = '';
             document.getElementById('input-handler').value = '';
             document.getElementById('input-notes').value = '';
             document.getElementById('loading-msg').classList.remove('active');
@@ -555,8 +508,8 @@
         async function addNewApartment() {
             const address = document.getElementById('input-address').value.trim();
             const neighborhood = document.getElementById('input-neighborhood').value.trim();
-            const type = document.getElementById('input-type').value;
-            const status = document.getElementById('input-status').value;
+            const type = document.getElementById('input-type').value.trim();
+            const status = document.getElementById('input-status').value.trim();
             const handler = document.getElementById('input-handler').value.trim();
             const notes = document.getElementById('input-notes').value.trim();
 
@@ -565,45 +518,36 @@
                 return;
             }
 
-            // הצגת הודעת טעינה
             document.getElementById('loading-msg').classList.add('active');
 
             try {
                 const coords = await geocodeAddress(address);
                 
                 if (!coords) {
-                    alert('לא הצלחתי למצוא את הכתובת. נסי לכתוב אותה בצורה אחרת (לדוגמה: "רחוב קינג ג\'ורג\' 25")');
+                    alert('לא הצלחתי למצוא את הכתובת. נסי לכתוב אותה בצורה אחרת.');
                     document.getElementById('loading-msg').classList.remove('active');
                     return;
                 }
 
                 const newApt = {
-                    id: Date.now(), // ID ייחודי
+                    id: Date.now(),
                     address: address,
                     neighborhood: neighborhood || 'ירושלים',
                     lat: coords.lat,
                     lng: coords.lng,
-                    type: type,
-                    status: status,
+                    type: type || 'דירה',
+                    status: status || 'בלעדיות',
                     handler: handler,
-                    notes: notes
+                    notes: notes,
+                    userNote: ''
                 };
 
-                // שמירה ב-localStorage
-                const added = getSavedApartments();
-                added.push(newApt);
-                saveApartments(added);
-
-                // הוספה למפה
-                addMarkerToMap(newApt);
                 apartments.push(newApt);
+                addMarkerToMap(newApt);
+                await saveData();
 
-                // מיקוד על הנקודה החדשה
                 map.setView([coords.lat, coords.lng], 16);
-
-                // עדכון סטטיסטיקות
                 updateStats();
-
                 closeAddModal();
                 alert('הדירה נוספה בהצלחה! ✓');
 
@@ -613,17 +557,13 @@
             }
         }
 
-        // === עדכון סטטיסטיקות ===
+        // === סטטיסטיקות ===
         function updateStats() {
-            const exclusive = apartments.filter(a => a.status === 'exclusive').length;
-            const noExclusive = apartments.filter(a => a.status === 'no-exclusive').length;
-            const rental = apartments.filter(a => a.status === 'rental').length;
-            const signed = apartments.filter(a => a.status === 'signed').length;
-            document.getElementById('stats').innerHTML = 
-                `סה"כ: ${apartments.length} נכסים | 🟢 בלעדיות: ${exclusive} | 🟣 ללא בלעדיות: ${noExclusive} | 🔵 שכירות: ${rental} | 🔴 חתום: ${signed}`;
+            document.getElementById('stats').innerHTML = `סה"כ: ${apartments.length} נכסים`;
         }
 
-        updateStats();
+        // === הפעלה ===
+        init();
     </script>
 </body>
 </html>
