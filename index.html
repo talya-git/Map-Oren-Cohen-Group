@@ -54,29 +54,31 @@
 
         #search-bar {
             background: #34495e;
-            padding: 8px 20px;
+            padding: 8px 15px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         #search-input {
             flex: 1;
+            min-width: 150px;
             padding: 8px 12px;
             border: none;
             border-radius: 5px;
             font-size: 0.9em;
             direction: rtl;
-            max-width: 400px;
         }
 
         #search-input:focus {
             outline: 2px solid #3498db;
         }
 
-        #search-bar label {
-            color: white;
-            font-size: 0.85em;
+        .filters-row {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
         }
 
         .filter-btn {
@@ -108,6 +110,34 @@
         #map {
             height: calc(100vh - 100px);
             width: 100%;
+        }
+
+        @media (max-width: 600px) {
+            #header {
+                padding: 10px 12px;
+            }
+            #header h1 {
+                font-size: 1em;
+                width: 100%;
+            }
+            #map {
+                height: calc(100vh - 130px);
+            }
+            .filter-btn {
+                padding: 4px 8px;
+                font-size: 0.75em;
+            }
+            #search-input {
+                font-size: 0.85em;
+                padding: 6px 10px;
+            }
+            #add-btn {
+                padding: 6px 12px;
+                font-size: 0.8em;
+            }
+            .apartment-popup {
+                min-width: 200px;
+            }
         }
 
         .modal-overlay {
@@ -327,12 +357,14 @@
     </div>
     
     <div id="search-bar">
-        <input type="text" id="search-input" placeholder="🔍 חיפוש לפי כתובת, שכונה, מטפל..." oninput="filterApartments()" />
-        <button class="filter-btn filter-all active" onclick="setFilter('all')">הכל</button>
-        <button class="filter-btn filter-exclusive" onclick="setFilter('בלעדיות')">🟢 בלעדיות</button>
-        <button class="filter-btn filter-no-exclusive" onclick="setFilter('ללא בלעדיות')">🟣 ללא בלעדיות</button>
-        <button class="filter-btn filter-rental" onclick="setFilter('שכירות')">🔵 שכירות</button>
-        <button class="filter-btn filter-signed" onclick="setFilter('חתום')">🔴 חתום</button>
+        <input type="text" id="search-input" placeholder="🔍 חיפוש..." oninput="filterApartments()" />
+        <div class="filters-row">
+            <button class="filter-btn filter-all active" onclick="setFilter('all')">הכל</button>
+            <button class="filter-btn filter-exclusive" onclick="setFilter('בלעדיות')">🟢</button>
+            <button class="filter-btn filter-no-exclusive" onclick="setFilter('ללא בלעדיות')">🟣</button>
+            <button class="filter-btn filter-rental" onclick="setFilter('שכירות')">🔵</button>
+            <button class="filter-btn filter-signed" onclick="setFilter('חתום')">🔴</button>
+        </div>
     </div>
 
     <div id="map"></div>
@@ -389,6 +421,28 @@
             return '#95a5a6';
         }
 
+        // === משרדים ===
+        const offices = [
+            { name: 'משרד ראשי - Oren Cohen Group', address: 'הקרן הקיימת לישראל 33', lat: 31.7720, lng: 35.2130 },
+            { name: 'משרד פרויקטים', address: 'הקרן הקיימת לישראל 29', lat: 31.7718, lng: 35.2125 }
+        ];
+
+        function addOfficeMarkers() {
+            const officeIcon = L.divIcon({
+                html: `<img src="logo.png" style="width:40px;height:40px;border-radius:50%;border:3px solid gold;box-shadow:0 2px 8px rgba(0,0,0,0.4);" />`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20],
+                popupAnchor: [0, -20],
+                className: ''
+            });
+
+            offices.forEach(office => {
+                L.marker([office.lat, office.lng], { icon: officeIcon })
+                    .addTo(map)
+                    .bindPopup(`<div class="apartment-popup"><h3>${office.name}</h3><div class="detail">${office.address}</div></div>`);
+            });
+        }
+
         // === אתחול ===
         async function init() {
             map = L.map('map', { zoomControl: true }).setView([31.7683, 35.2150], 14);
@@ -398,6 +452,7 @@
 
             apartments = await loadData();
             apartments.forEach(apt => addMarkerToMap(apt));
+            addOfficeMarkers();
             updateStats();
 
             document.getElementById('loading-screen').style.display = 'none';
