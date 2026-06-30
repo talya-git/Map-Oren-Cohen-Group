@@ -17,34 +17,38 @@
             direction: rtl;
         }
 
-        #header {
+        #toolbar {
             background: #2c3e50;
             color: white;
-            padding: 8px 15px;
+            padding: 6px 10px;
+        }
+
+        #toolbar-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 5px;
+            margin-bottom: 5px;
         }
 
-        #header h1 {
-            font-size: 1.1em;
+        #toolbar-top h1 {
+            font-size: 1em;
+            margin: 0;
         }
 
         #stats {
-            font-size: 0.85em;
-            opacity: 0.9;
+            font-size: 0.7em;
+            opacity: 0.8;
+            margin-right: 5px;
         }
 
         #add-btn {
-            padding: 7px 16px;
+            padding: 5px 12px;
             background: #27ae60;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 0.9em;
+            font-size: 0.8em;
             font-weight: bold;
         }
 
@@ -52,41 +56,29 @@
             background: #219a52;
         }
 
-        #search-bar {
-            background: #34495e;
-            padding: 6px 10px;
+        #toolbar-bottom {
             display: flex;
             align-items: center;
-            gap: 6px;
-            flex-wrap: nowrap;
-            overflow-x: auto;
+            gap: 4px;
         }
 
         #search-input {
-            min-width: 100px;
-            width: 40%;
-            padding: 6px 10px;
+            width: 120px;
+            padding: 5px 8px;
             border: none;
-            border-radius: 5px;
-            font-size: 0.85em;
+            border-radius: 4px;
+            font-size: 0.8em;
             direction: rtl;
-            flex-shrink: 0;
         }
 
         #search-input:focus {
             outline: 2px solid #3498db;
         }
 
-        .filters-row {
-            display: flex;
-            gap: 4px;
-            flex-shrink: 0;
-        }
-
         .filter-btn {
-            padding: 4px 8px;
+            padding: 4px 7px;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 0.7em;
             font-weight: bold;
@@ -94,6 +86,7 @@
             opacity: 0.6;
             transition: opacity 0.2s;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .filter-btn.active {
@@ -111,46 +104,41 @@
         .filter-signed { background: #e74c3c; }
 
         #map {
-            height: calc(100vh - 85px);
+            height: calc(100vh - 65px);
             width: 100%;
         }
 
         @media (max-width: 600px) {
-            #header {
-                padding: 6px 10px;
+            #toolbar {
+                padding: 4px 8px;
             }
-            #header h1 {
-                font-size: 0.9em;
+            #toolbar-top h1 {
+                font-size: 0.85em;
             }
-            #stats {
-                font-size: 0.7em;
+            #toolbar-top {
+                margin-bottom: 3px;
             }
             #add-btn {
-                padding: 5px 10px;
-                font-size: 0.75em;
-            }
-            #search-bar {
-                padding: 5px 8px;
-                gap: 4px;
+                padding: 4px 8px;
+                font-size: 0.7em;
             }
             #search-input {
-                width: 35%;
-                min-width: 80px;
-                padding: 5px 8px;
-                font-size: 0.8em;
+                width: 90px;
+                padding: 4px 6px;
+                font-size: 0.75em;
             }
             .filter-btn {
-                padding: 3px 6px;
+                padding: 3px 5px;
                 font-size: 0.65em;
             }
             #map {
-                height: calc(100vh - 75px);
+                height: calc(100vh - 58px);
             }
             .apartment-popup {
                 min-width: 200px;
             }
             .apartment-popup h3 {
-                font-size: 0.95em;
+                font-size: 0.9em;
             }
             .apartment-popup .detail {
                 font-size: 0.8em;
@@ -367,20 +355,19 @@
 <body>
     <div id="loading-screen">🔄 טוען מפה...</div>
 
-    <div id="header">
-        <h1>🏠 מפת דירות - ירושלים</h1>
-        <button id="add-btn" onclick="openAddModal()">➕ הוסף דירה חדשה</button>
-        <div id="stats"></div>
-    </div>
-    
-    <div id="search-bar">
-        <input type="text" id="search-input" placeholder="🔍 חיפוש..." oninput="filterApartments()" />
-        <div class="filters-row">
+    <div id="toolbar">
+        <div id="toolbar-top">
+            <h1>🏠 Oren Cohen Group</h1>
+            <button id="add-btn" onclick="openAddModal()">➕ הוסף</button>
+        </div>
+        <div id="toolbar-bottom">
+            <input type="text" id="search-input" placeholder="🔍 חיפוש..." oninput="filterApartments()" />
             <button class="filter-btn filter-all active" onclick="setFilter('all')">הכל</button>
             <button class="filter-btn filter-exclusive" onclick="setFilter('בלעדיות')">🟢</button>
             <button class="filter-btn filter-no-exclusive" onclick="setFilter('ללא בלעדיות')">🟣</button>
             <button class="filter-btn filter-rental" onclick="setFilter('שכירות')">🔵</button>
             <button class="filter-btn filter-signed" onclick="setFilter('חתום')">🔴</button>
+            <span id="stats"></span>
         </div>
     </div>
 
