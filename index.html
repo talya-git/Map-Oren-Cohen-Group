@@ -350,6 +350,15 @@
             font-size: 1.3em;
             color: #2c3e50;
         }
+        .neighborhood-label {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-size: 0.75em;
+            font-weight: bold;
+            color: #333;
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body>
@@ -414,15 +423,62 @@
         let markers = {};
         let currentFilter = 'all';
 
-        // === צבעים לפי סטטוס ===
-        function getStatusColor(status) {
-            if (!status) return '#95a5a6';
-            const s = status.trim();
-            if (s === 'בלעדיות') return '#27ae60';
-            if (s === 'ללא בלעדיות') return '#9b59b6';
-            if (s === 'שכירות') return '#3498db';
-            if (s === 'חתום') return '#e74c3c';
+        // === צבעים לפי שכונה ===
+        function getNeighborhoodColor(neighborhood) {
+            if (!neighborhood) return '#95a5a6';
+            const n = neighborhood.trim();
+            if (n === 'רחביה') return '#e74c3c';
+            if (n === 'בקעה') return '#27ae60';
+            if (n === 'שערי חסד') return '#3498db';
+            if (n === 'טלביה') return '#f39c12';
+            if (n === 'קרית שמואל') return '#9b59b6';
+            if (n === 'מרכז העיר') return '#e67e22';
+            if (n === 'המושבה הגרמנית' || n === 'עמק רפאים') return '#1abc9c';
+            if (n === 'ארנונה') return '#d35400';
+            if (n === 'סן סימון') return '#8e44ad';
+            if (n === 'מחנה ישראל') return '#2c3e50';
             return '#95a5a6';
+        }
+
+        // === מצולעי שכונות ===
+        function addNeighborhoodAreas() {
+            const neighborhoods = {
+                'רחביה': {
+                    color: '#e74c3c',
+                    coords: [[31.7780,35.2090],[31.7780,35.2170],[31.7730,35.2170],[31.7730,35.2090]]
+                },
+                'בקעה': {
+                    color: '#27ae60',
+                    coords: [[31.7620,35.2170],[31.7620,35.2220],[31.7580,35.2220],[31.7580,35.2170]]
+                },
+                'שערי חסד': {
+                    color: '#3498db',
+                    coords: [[31.7790,35.2100],[31.7790,35.2145],[31.7750,35.2145],[31.7750,35.2100]]
+                },
+                'טלביה': {
+                    color: '#f39c12',
+                    coords: [[31.7750,35.2150],[31.7750,35.2200],[31.7720,35.2200],[31.7720,35.2150]]
+                },
+                'קרית שמואל': {
+                    color: '#9b59b6',
+                    coords: [[31.7700,35.2060],[31.7700,35.2110],[31.7665,35.2110],[31.7665,35.2060]]
+                }
+            };
+
+            Object.keys(neighborhoods).forEach(name => {
+                const area = neighborhoods[name];
+                L.polygon(area.coords, {
+                    color: area.color,
+                    weight: 2,
+                    fillColor: area.color,
+                    fillOpacity: 0.08,
+                    dashArray: '5,5'
+                }).addTo(map).bindTooltip(name, {
+                    permanent: true,
+                    direction: 'center',
+                    className: 'neighborhood-label'
+                });
+            });
         }
 
         // === משרדים ===
@@ -457,6 +513,7 @@
             apartments = await loadData();
             apartments.forEach(apt => addMarkerToMap(apt));
             addOfficeMarkers();
+            addNeighborhoodAreas();
             updateStats();
 
             document.getElementById('loading-screen').style.display = 'none';
@@ -528,9 +585,9 @@
         }
 
         // === סמנים ===
-        function createCustomIcon(status) {
+        function createCustomIcon(neighborhood) {
             const size = 28;
-            const color = getStatusColor(status);
+            const color = getNeighborhoodColor(neighborhood);
             return L.divIcon({
                 html: `<div style="
                     background-color: ${color};
@@ -549,8 +606,8 @@
         }
 
         function addMarkerToMap(apt) {
-            const icon = createCustomIcon(apt.status);
-            const statusColor = getStatusColor(apt.status);
+            const icon = createCustomIcon(apt.neighborhood);
+            const neighborhoodColor = getNeighborhoodColor(apt.neighborhood);
 
             let popupContent = `
                 <div class="apartment-popup">
@@ -568,7 +625,7 @@
             }
 
             popupContent += `
-                    <span class="status-badge" style="background:${statusColor}">${apt.status}</span>
+                    <span class="status-badge" style="background:${neighborhoodColor}">${apt.neighborhood} | ${apt.status}</span>
                     
                     <div class="note-section">
                         <textarea id="note-input-${apt.id}" placeholder="הוסיפי הערה או מלל...">${apt.userNote || ''}</textarea>
