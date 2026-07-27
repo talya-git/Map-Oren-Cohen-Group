@@ -664,7 +664,7 @@
         function createCustomIcon(neighborhood, hasSign) {
             const size = 28;
             const color = getNeighborhoodColor(neighborhood);
-            const flag = hasSign ? `<div style="position:absolute;top:-10px;right:-8px;font-size:16px;">🚩</div>` : '';
+            const flag = hasSign ? `<div style="position:absolute;top:-18px;right:-12px;font-size:24px;">🚩</div>` : '';
             return L.divIcon({
                 html: `<div style="position:relative;width:${size}px;height:${size}px;">
                     <div style="
@@ -710,7 +710,7 @@
                     
                     <div class="note-section">
                         <textarea id="note-input-${apt.id}" placeholder="הוסיפי הערה או מלל...">${apt.userNote || ''}</textarea>
-                        <div id="note-display-${apt.id}" style="font-size:0.85em;color:#27ae60;margin-top:3px;">${apt.userNote || ''}</div>
+                        ${apt.userNote ? `<div style="background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;margin-top:6px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;" id="note-display-${apt.id}">${apt.userNote}</div>` : `<div id="note-display-${apt.id}"></div>`}
                         <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 שמור הערה</button>
                     </div>
                     <button class="delete-btn" onclick="deleteApartment('${apt.id}')">🗑️ מחק נכס</button>
@@ -779,7 +779,10 @@
 
                 // עדכון תוכן הפופאפ מיידי
                 const noteDisplay = document.getElementById(`note-display-${id}`);
-                if (noteDisplay) noteDisplay.textContent = text;
+                if (noteDisplay) {
+                    noteDisplay.textContent = text;
+                    noteDisplay.style.cssText = 'background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;margin-top:6px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;';
+                }
 
                 const btn = document.querySelector(`[onclick="saveNoteForApt('${id}')"]`);
                 if (btn) { btn.textContent = '✓ נשמר!'; setTimeout(() => btn.textContent = '💾 שמור הערה', 2000); }
