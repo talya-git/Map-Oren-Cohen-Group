@@ -599,6 +599,12 @@
                     const text = await response.text();
                     const data = JSON.parse(text);
                     if (data && data.length > 0) {
+                        // מיזוג הערות מ-localStorage
+                        const saved = localStorage.getItem('shared_apartments');
+                        const local = saved ? JSON.parse(saved) : [];
+                        const noteMap = {};
+                        local.forEach(a => { if (a.userNote) noteMap[a.id] = a.userNote; });
+                        data.forEach(a => { if (noteMap[a.id]) a.userNote = noteMap[a.id]; });
                         return data;
                     }
                 }
@@ -655,9 +661,18 @@
         }
 
         // === סמנים ===
-        function createCustomIcon(neighborhood) {
+        function createCustomIcon(neighborhood, hasSign) {
             const size = 28;
             const color = getNeighborhoodColor(neighborhood);
+            if (hasSign) {
+                return L.divIcon({
+                    html: `<div style="font-size:28px;line-height:1;">🚩</div>`,
+                    iconSize: [28, 28],
+                    iconAnchor: [4, 28],
+                    popupAnchor: [0, -28],
+                    className: ''
+                });
+            }
             return L.divIcon({
                 html: `<div style="
                     background-color: ${color};
@@ -676,7 +691,8 @@
         }
 
         function addMarkerToMap(apt) {
-            const icon = createCustomIcon(apt.neighborhood);
+            const hasSign = apt.userNote && apt.userNote.includes('שלט');
+            const icon = createCustomIcon(apt.neighborhood, hasSign);
             const neighborhoodColor = getNeighborhoodColor(apt.neighborhood);
 
             let popupContent = `
@@ -699,6 +715,7 @@
                     
                     <div class="note-section">
                         <textarea id="note-input-${apt.id}" placeholder="הוסיפי הערה או מלל...">${apt.userNote || ''}</textarea>
+                        <div id="note-display-${apt.id}" style="font-size:0.85em;color:#27ae60;margin-top:3px;">${apt.userNote || ''}</div>
                         <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 שמור הערה</button>
                     </div>
                     <button class="delete-btn" onclick="deleteApartment('${apt.id}')">🗑️ מחק נכס</button>
@@ -755,8 +772,21 @@
             const apt = apartments.find(a => a.id == id);
             if (apt) {
                 apt.userNote = text;
+                localStorage.setItem('shared_apartments', JSON.stringify(apartments));
                 await updateNote(id, text);
-                alert('ההערה נשמרה! ✓');
+
+                // עדכון אייקון מיידי
+                const hasSign = text.includes('שלט');
+                if (markers[id]) {
+                    markers[id].setIcon(createCustomIcon(apt.neighborhood, hasSign));
+                }
+
+                // עדכון תוכן הפופאפ מיידי
+                const noteDisplay = document.getElementById(`note-display-${id}`);
+                if (noteDisplay) noteDisplay.textContent = text;
+
+                const btn = document.querySelector(`[onclick="saveNoteForApt('${id}')"]`);
+                if (btn) { btn.textContent = '✓ נשמר!'; setTimeout(() => btn.textContent = '💾 שמור הערה', 2000); }
             }
         }
 
