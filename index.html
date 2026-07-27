@@ -719,6 +719,7 @@
                         <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 שמור הערה</button>
                     </div>
                     <button class="delete-btn" onclick="deleteApartment('${apt.id}')">🗑️ מחק נכס</button>
+                    <button class="save-note-btn" style="background:#f39c12;margin-top:5px;" onclick="startMoveMarker('${apt.id}')">📍 ערוך מיקום</button>
                 </div>
             `;
 
@@ -870,6 +871,56 @@
             } catch (error) {
                 alert('שגיאה בחיפוש הכתובת. בדקי את חיבור האינטרנט ונסי שוב.');
                 document.getElementById('loading-msg').classList.remove('active');
+            }
+        }
+
+        // === הזזת סמן ===
+        let _movingId = null;
+        let _moveBar = null;
+
+        function startMoveMarker(id) {
+            if (_movingId) stopMoveMarker(false);
+            _movingId = id;
+            const marker = markers[id];
+            marker.closePopup();
+            marker.dragging.enable();
+            marker.setOpacity(0.7);
+
+            // סרגל הנחיה
+            _moveBar = document.createElement('div');
+            _moveBar.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#f39c12;color:white;padding:8px 18px;border-radius:8px;z-index:3000;font-size:0.9em;display:flex;gap:10px;align-items:center;';
+            _moveBar.innerHTML = `<span>📍 גרור את הסמן למיקום הנכון</span><button onclick="stopMoveMarker(true)" style="background:#27ae60;color:white;border:none;border-radius:5px;padding:4px 10px;cursor:pointer;">✓ שמור</button><button onclick="stopMoveMarker(false)" style="background:#e74c3c;color:white;border:none;border-radius:5px;padding:4px 10px;cursor:pointer;">✗ ביטול</button>`;
+            document.body.appendChild(_moveBar);
+        }
+
+        async function stopMoveMarker(save) {
+            if (!_movingId) return;
+            const id = _movingId;
+            const marker = markers[id];
+            marker.dragging.disable();
+            marker.setOpacity(1);
+            if (_moveBar) { _moveBar.remove(); _moveBar = null; }
+            _movingId = null;
+
+            if (save) {
+                const { lat, lng } = marker.getLatLng();
+                const apt = apartments.find(a => a.id == id);
+                if (apt) {
+                    apt.lat = lat;
+                    apt.lng = lng;
+                    localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+                    try {
+                        await fetch(GOOGLE_SCRIPT_URL, {
+                            method: 'POST', mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'updateLocation', id, lat, lng })
+                        });
+                    } catch(e) {}
+                }
+            } else {
+                // החזר למיקום המקורי
+                const apt = apartments.find(a => a.id == id);
+                if (apt) marker.setLatLng([apt.lat, apt.lng]);
             }
         }
 
