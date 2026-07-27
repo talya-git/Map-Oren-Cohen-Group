@@ -664,25 +664,20 @@
         function createCustomIcon(neighborhood, hasSign) {
             const size = 28;
             const color = getNeighborhoodColor(neighborhood);
-            if (hasSign) {
-                return L.divIcon({
-                    html: `<div style="font-size:28px;line-height:1;">🚩</div>`,
-                    iconSize: [28, 28],
-                    iconAnchor: [4, 28],
-                    popupAnchor: [0, -28],
-                    className: ''
-                });
-            }
+            const flag = hasSign ? `<div style="position:absolute;top:-10px;right:-8px;font-size:16px;">🚩</div>` : '';
             return L.divIcon({
-                html: `<div style="
-                    background-color: ${color};
-                    width: ${size}px;
-                    height: ${size}px;
-                    border-radius: 50% 50% 50% 0;
-                    transform: rotate(-45deg);
-                    border: 3px solid white;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-                "></div>`,
+                html: `<div style="position:relative;width:${size}px;height:${size}px;">
+                    <div style="
+                        background-color: ${color};
+                        width: ${size}px;
+                        height: ${size}px;
+                        border-radius: 50% 50% 50% 0;
+                        transform: rotate(-45deg);
+                        border: 3px solid white;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                    "></div>
+                    ${flag}
+                </div>`,
                 iconSize: [size, size],
                 iconAnchor: [size/2, size],
                 popupAnchor: [0, -size],
