@@ -460,6 +460,11 @@
             <label>הערות</label>
             <textarea id="input-notes" placeholder="פרטים נוספים..."></textarea>
 
+            <label style="display:flex;align-items:center;gap:8px;margin-top:12px;">
+                <input type="checkbox" id="input-external" style="width:auto;" />
+                נכס שלא מהמשרד (מתחרה)
+            </label>
+
             <div class="loading" id="loading-msg">🔍 מחפש את הכתובת על המפה...</div>
 
             <div class="modal-buttons">
@@ -666,23 +671,16 @@
         }
 
         // === סמנים ===
-        function createCustomIcon(neighborhood, hasSign) {
+        function createCustomIcon(neighborhood, hasSign, isExternal, isSold) {
             const size = 28;
             const color = getNeighborhoodColor(neighborhood);
             const flag = hasSign ? `<div style="position:absolute;top:-18px;right:-12px;font-size:24px;">🚩</div>` : '';
+            const soldLabel = isSold ? `<div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:#e74c3c;color:white;font-size:9px;font-weight:bold;padding:1px 4px;border-radius:3px;white-space:nowrap;">לא למכירה</div>` : '';
+            const shape = isExternal
+                ? `<div style="background-color:${color};width:${size}px;height:${size}px;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);${isSold ? 'opacity:0.5;' : ''}"></div>`
+                : `<div style="background-color:${color};width:${size}px;height:${size}px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);${isSold ? 'opacity:0.5;' : ''}"></div>`;
             return L.divIcon({
-                html: `<div style="position:relative;width:${size}px;height:${size}px;">
-                    <div style="
-                        background-color: ${color};
-                        width: ${size}px;
-                        height: ${size}px;
-                        border-radius: 50% 50% 50% 0;
-                        transform: rotate(-45deg);
-                        border: 3px solid white;
-                        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-                    "></div>
-                    ${flag}
-                </div>`,
+                html: `<div style="position:relative;width:${size}px;height:${size}px;">${shape}${flag}${soldLabel}</div>`,
                 iconSize: [size, size],
                 iconAnchor: [size/2, size],
                 popupAnchor: [0, -size],
@@ -692,7 +690,9 @@
 
         function addMarkerToMap(apt) {
             const hasSign = apt.userNote && apt.userNote.includes('שלט');
-            const icon = createCustomIcon(apt.neighborhood, hasSign);
+            const isExternal = apt.external == true || apt.external === 'true';
+            const isSold = apt.sold == true || apt.sold === 'true';
+            const icon = createCustomIcon(apt.neighborhood, hasSign, isExternal, isSold);
             const neighborhoodColor = getNeighborhoodColor(apt.neighborhood);
 
             let popupContent = `
@@ -717,6 +717,10 @@
                         <textarea id="note-input-${apt.id}" placeholder="הוסיפי הערה או מלל...">${apt.userNote || ''}</textarea>
                         ${apt.userNote ? `<div style="background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;margin-top:6px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;" id="note-display-${apt.id}">${apt.userNote}</div>` : `<div id="note-display-${apt.id}"></div>`}
                         <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 שמור הערה</button>
+                    </div>
+                    <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;">
+                        <button class="save-note-btn" style="background:${apt.status==='בלעדיות'?'#27ae60':'#9b59b6'};" onclick="toggleStatus('${apt.id}')">${apt.status==='בלעדיות'?'✓ בלעדיות':'✗ ללא בלעדיות'}</button>
+                        <button class="save-note-btn" style="background:${isSold?'#e74c3c':'#95a5a6'};" onclick="toggleSold('${apt.id}')">${isSold?'🔴 לא למכירה':'⚪ פעיל'}</button>
                     </div>
                     <button class="delete-btn" onclick="deleteApartment('${apt.id}')">🗑️ מחק נכס</button>
                     <button class="save-note-btn" style="background:#f39c12;margin-top:5px;" onclick="startMoveMarker('${apt.id}')">📍 ערוך מיקום</button>
@@ -861,7 +865,9 @@
                     address, neighborhood: neighborhood || 'ירושלים',
                     lat: coords.lat, lng: coords.lng,
                     type: type || 'דירה', status: status || 'בלעדיות',
-                    handler, notes, userNote: ''
+                    handler, notes, userNote: '',
+                    external: document.getElementById('input-external').checked,
+                    sold: false
                 };
 
                 apartments.push(newApt);
@@ -875,6 +881,49 @@
                 alert('שגיאה בחיפוש הכתובת. בדקי את חיבור האינטרנט ונסי שוב.');
                 document.getElementById('loading-msg').classList.remove('active');
             }
+        }
+
+        // === עדכון סטטוס ===
+        async function toggleStatus(id) {
+            const apt = apartments.find(a => a.id == id);
+            if (!apt) return;
+            apt.status = apt.status === 'בלעדיות' ? 'ללא בלעדיות' : 'בלעדיות';
+            localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'updateStatus', id, status: apt.status })
+                });
+            } catch(e) {}
+            refreshMarker(id);
+        }
+
+        // === ירד ממכירה ===
+        async function toggleSold(id) {
+            const apt = apartments.find(a => a.id == id);
+            if (!apt) return;
+            apt.sold = !apt.sold;
+            localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'updateSold', id, sold: apt.sold })
+                });
+            } catch(e) {}
+            refreshMarker(id);
+        }
+
+        function refreshMarker(id) {
+            const apt = apartments.find(a => a.id == id);
+            if (!apt || !markers[id]) return;
+            const hasSign = apt.userNote && apt.userNote.includes('שלט');
+            const isExternal = apt.external == true || apt.external === 'true';
+            const isSold = apt.sold == true || apt.sold === 'true';
+            map.removeLayer(markers[id]);
+            delete markers[id];
+            addMarkerToMap(apt);
         }
 
         // === הזזת סמן ===
