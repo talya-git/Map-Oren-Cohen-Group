@@ -567,6 +567,8 @@
             { name: 'משרד פרויקטים', address: 'הקרן הקיימת לישראל 29', lat: 31.7767, lng: 35.2135 }
         ];
 
+        let officeMarkers = [];
+
         function addOfficeMarkers() {
             const officeIcon = L.divIcon({
                 html: `<img src="logo.png" style="width:40px;height:40px;border-radius:50%;border:3px solid gold;box-shadow:0 2px 8px rgba(0,0,0,0.4);" />`,
@@ -577,9 +579,10 @@
             });
 
             offices.forEach(office => {
-                L.marker([office.lat, office.lng], { icon: officeIcon })
+                const m = L.marker([office.lat, office.lng], { icon: officeIcon })
                     .addTo(map)
                     .bindPopup(`<div class="apartment-popup"><h3>${office.name}</h3><div class="detail">${office.address}</div></div>`);
+                officeMarkers.push(m);
             });
         }
 
@@ -744,10 +747,7 @@
 
                 const matchesSearch = !searchText || 
                     (apt.address && apt.address.toLowerCase().includes(searchText)) ||
-                    (apt.neighborhood && apt.neighborhood.toLowerCase().includes(searchText)) ||
-                    (apt.handler && apt.handler.toLowerCase().includes(searchText)) ||
-                    (apt.type && apt.type.toLowerCase().includes(searchText)) ||
-                    (apt.notes && apt.notes.toLowerCase().includes(searchText));
+                    (apt.neighborhood && apt.neighborhood.toLowerCase().includes(searchText));
 
                 const matchesFilter = currentFilter === 'all' || 
                     (apt.neighborhood && apt.neighborhood.trim() === currentFilter);
@@ -758,10 +758,11 @@
                     map.removeLayer(marker);
                 }
             });
+            // הסתר/הצג משרדים לפי חיפוש
+            officeMarkers.forEach(m => searchText ? map.removeLayer(m) : m.addTo(map));
         }
 
         function setFilter(filter) {
-            currentFilter = filter;
             
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
