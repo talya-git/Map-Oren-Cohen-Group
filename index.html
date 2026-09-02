@@ -599,6 +599,13 @@
             addNeighborhoodAreas();
             updateStats();
 
+            map.on('popupclose', () => {
+                document.querySelectorAll('[id^="agent-input-"]').forEach(el => {
+                    const id = el.id.replace('agent-input-', '');
+                    saveAgent(id);
+                });
+            });
+
             document.getElementById('loading-screen').style.display = 'none';
         }
 
@@ -721,7 +728,7 @@
                         <div style="font-size:0.8em;color:#888;margin-bottom:3px;">👤 סוכן מטפל:</div>
                         <div id="agent-input-${apt.id}" contenteditable="true"
                             style="border:1px solid #ddd;border-radius:5px;padding:6px 10px;font-size:0.9em;min-height:28px;outline:none;background:#f9f9f9;"
-                            onblur="saveAgent('${apt.id}')" oninput="saveAgent('${apt.id}')" onfocus="this.style.borderColor='#3498db';this.style.background='#fff'">${apt.agent || ''}</div>
+                            onblur="saveAgent('${apt.id}')" onfocus="this.style.borderColor='#3498db';this.style.background='#fff'">${apt.agent || ''}</div>
                     </div>
 
                     <div class="note-section">
@@ -814,16 +821,16 @@
         async function saveAgent(id) {
             const el = document.getElementById(`agent-input-${id}`);
             if (!el) return;
-            el.style.borderColor = '#ddd';
             const apt = apartments.find(a => a.id == id);
             if (!apt) return;
-            apt.agent = el.textContent.trim();
+            const newAgent = el.textContent.trim();
+            apt.agent = newAgent;
             localStorage.setItem('shared_apartments', JSON.stringify(apartments));
             try {
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST', mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'updateAgent', id, agent: apt.agent })
+                    body: JSON.stringify({ action: 'updateAgent', id, agent: newAgent })
                 });
             } catch(e) {}
         }
