@@ -720,7 +720,7 @@
                         <div style="font-size:0.8em;color:#888;margin-bottom:3px;">👤 סוכן מטפל:</div>
                         <div id="agent-input-${apt.id}" contenteditable="true"
                             style="border:1px solid #ddd;border-radius:5px;padding:6px 10px;font-size:0.9em;min-height:28px;outline:none;background:#f9f9f9;"
-                            onblur="saveAgent('${apt.id}')" onfocus="this.style.borderColor='#3498db';this.style.background='#fff'">${apt.agent || ''}</div>
+                            onblur="saveAgent('${apt.id}')" oninput="saveAgent('${apt.id}')" onfocus="this.style.borderColor='#3498db';this.style.background='#fff'">${apt.agent || ''}</div>
                     </div>
 
                     <div class="note-section">
