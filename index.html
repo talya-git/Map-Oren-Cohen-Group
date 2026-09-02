@@ -757,12 +757,9 @@
 
                     <div class="note-section">
                         <div style="font-size:0.8em;color:#888;margin-bottom:3px;">📝 הערה:</div>
-                        <textarea id="note-input-${apt.id}" placeholder="כתוב הערה...">${apt.userNote || ''}</textarea>
-                        ${apt.userNote ? `<div style="background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;margin-top:6px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;" id="note-display-${apt.id}">${apt.userNote}</div>` : `<div id="note-display-${apt.id}"></div>`}
-                        <div style="display:flex;gap:5px;margin-top:5px;">
-                            <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 שמור</button>
-                            <button class="save-note-btn" style="background:#e74c3c;" onclick="deleteNoteForApt('${apt.id}')">🗑️ מחק הערה</button>
-                        </div>
+                        ${apt.userNote ? `<div style="display:flex;align-items:center;justify-content:space-between;background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;" id="note-display-${apt.id}"><span>${apt.userNote}</span><button onclick="deleteNoteForApt('${apt.id}')" style="background:none;border:none;cursor:pointer;font-size:1em;padding:0 4px;color:#e74c3c;">🗑️</button></div>` : `<div id="note-display-${apt.id}"></div>`}
+                        <textarea id="note-input-${apt.id}" placeholder="כתוב הערה..." style="margin-top:6px;">${apt.userNote ? '' : ''}</textarea>
+                        <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 שמור</button>
                     </div>
 
                     <div class="note-section" style="display:flex;gap:5px;flex-wrap:wrap;">
@@ -833,8 +830,9 @@
                 // עדכון תוכן הפופאפ מיידי
                 const noteDisplay = document.getElementById(`note-display-${id}`);
                 if (noteDisplay) {
-                    noteDisplay.textContent = text;
-                    noteDisplay.style.cssText = 'background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;margin-top:6px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;';
+                    noteDisplay.innerHTML = `<span>${text}</span><button onclick="deleteNoteForApt('${id}')" style="background:none;border:none;cursor:pointer;font-size:1em;padding:0 4px;color:#e74c3c;">🗑️</button>`;
+                    noteDisplay.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;';
+                    document.getElementById(`note-input-${id}`).value = '';
                 }
 
                 const btn = document.querySelector(`[onclick="saveNoteForApt('${id}')"]`);
