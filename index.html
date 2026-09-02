@@ -599,28 +599,35 @@
             addNeighborhoodAreas();
             updateStats();
 
+            let _openPopupId = null;
+            map.on('popupopen', (e) => {
+                const el = e.popup.getElement();
+                if (!el) return;
+                const agentEl = el.querySelector('[id^="agent-input-"]');
+                if (agentEl) _openPopupId = agentEl.id.replace('agent-input-', '');
+            });
             map.on('popupclose', () => {
-                document.querySelectorAll('[id^="agent-input-"]').forEach(el => {
-                    const id = el.id.replace('agent-input-', '');
-                    const apt = apartments.find(a => a.id == id);
-                    if (!apt) return;
-                    const newAgent = el.textContent.trim();
-                    if (apt.agent !== newAgent) {
-                        apt.agent = newAgent;
-                        localStorage.setItem('shared_apartments', JSON.stringify(apartments));
-                        fetch(GOOGLE_SCRIPT_URL, {
-                            method: 'POST', mode: 'no-cors',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'updateAgent', id, agent: newAgent })
-                        }).catch(()=>{});
-                        // בנה מחדש את הפופאפ
-                        if (markers[id]) {
-                            map.removeLayer(markers[id]);
-                            delete markers[id];
-                            addMarkerToMap(apt);
-                        }
-                    }
-                });
+                if (!_openPopupId) return;
+                const id = _openPopupId;
+                _openPopupId = null;
+                const apt = apartments.find(a => a.id == id);
+                if (!apt) return;
+                // קרא את הטקסט מה-DOM לפני שנסגר
+                const el = document.getElementById(`agent-input-${id}`);
+                const newAgent = el ? el.textContent.trim() : apt.agent || '';
+                if (apt.agent === newAgent) return;
+                apt.agent = newAgent;
+                localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'updateAgent', id, agent: newAgent })
+                }).catch(()=>{});
+                if (markers[id]) {
+                    map.removeLayer(markers[id]);
+                    delete markers[id];
+                    addMarkerToMap(apt);
+                }
             });
 
             document.getElementById('loading-screen').style.display = 'none';
