@@ -843,8 +843,10 @@
         // === מחיקת דירה ===
         async function deleteApartment(id) {
             if (!confirm('למחוק את הנכס הזה מהמפה?')) return;
+            if (markers[id]) {
                 map.removeLayer(markers[id]);
                 delete markers[id];
+            }
             }
             
             apartments = apartments.filter(a => a.id != id);
