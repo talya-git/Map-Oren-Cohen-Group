@@ -616,8 +616,9 @@
                         const saved = localStorage.getItem('shared_apartments');
                         const local = saved ? JSON.parse(saved) : [];
                         const noteMap = {};
-                        local.forEach(a => { if (a.userNote) noteMap[a.id] = a.userNote; });
-                        data.forEach(a => { if (noteMap[a.id]) a.userNote = noteMap[a.id]; });
+                        const agentMap = {};
+                        local.forEach(a => { if (a.userNote) noteMap[a.id] = a.userNote; if (a.agent) agentMap[a.id] = a.agent; });
+                        data.forEach(a => { if (noteMap[a.id]) a.userNote = noteMap[a.id]; if (agentMap[a.id]) a.agent = agentMap[a.id]; });
                         return data;
                     }
                 }
