@@ -717,6 +717,9 @@
                     <span class="status-badge" style="background:${neighborhoodColor}">${apt.neighborhood} | ${apt.status}</span>
                     
                     <div class="note-section">
+                        <div style="font-size:0.8em;color:#888;margin-bottom:3px;">סוכן מטפל:</div>
+                        <div id="agent-input-${apt.id}" contenteditable="true" style="border:1px solid #ddd;border-radius:5px;padding:6px 10px;font-size:0.9em;min-height:28px;outline:none;" onblur="saveAgent('${apt.id}')" onfocus="this.style.borderColor='#3498db'">${apt.agent || ''}</div>
+                    </div>
                         <textarea id="note-input-${apt.id}" placeholder="הוסיפי הערה או מלל...">${apt.userNote || ''}</textarea>
                         ${apt.userNote ? `<div style="background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;margin-top:6px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;" id="note-display-${apt.id}">${apt.userNote}</div>` : `<div id="note-display-${apt.id}"></div>`}
                         <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 שמור הערה</button>
@@ -798,6 +801,23 @@
                 const btn = document.querySelector(`[onclick="saveNoteForApt('${id}')"]`);
                 if (btn) { btn.textContent = '✓ נשמר!'; setTimeout(() => btn.textContent = '💾 שמור הערה', 2000); }
             }
+        }
+
+        async function saveAgent(id) {
+            const el = document.getElementById(`agent-input-${id}`);
+            if (!el) return;
+            el.style.borderColor = '#ddd';
+            const apt = apartments.find(a => a.id == id);
+            if (!apt) return;
+            apt.agent = el.textContent.trim();
+            localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'updateAgent', id, agent: apt.agent })
+                });
+            } catch(e) {}
         }
 
         async function deleteNoteForApt(id) {
