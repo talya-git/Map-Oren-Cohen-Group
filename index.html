@@ -847,7 +847,6 @@
                 map.removeLayer(markers[id]);
                 delete markers[id];
             }
-            }
             
             apartments = apartments.filter(a => a.id != id);
             await removeApartment(id);
