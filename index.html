@@ -602,7 +602,24 @@
             map.on('popupclose', () => {
                 document.querySelectorAll('[id^="agent-input-"]').forEach(el => {
                     const id = el.id.replace('agent-input-', '');
-                    saveAgent(id);
+                    const apt = apartments.find(a => a.id == id);
+                    if (!apt) return;
+                    const newAgent = el.textContent.trim();
+                    if (apt.agent !== newAgent) {
+                        apt.agent = newAgent;
+                        localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+                        fetch(GOOGLE_SCRIPT_URL, {
+                            method: 'POST', mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'updateAgent', id, agent: newAgent })
+                        }).catch(()=>{});
+                        // בנה מחדש את הפופאפ
+                        if (markers[id]) {
+                            map.removeLayer(markers[id]);
+                            delete markers[id];
+                            addMarkerToMap(apt);
+                        }
+                    }
                 });
             });
 
