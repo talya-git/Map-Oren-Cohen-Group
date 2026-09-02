@@ -482,6 +482,7 @@
         let map;
         let markers = {};
         let currentFilter = 'all';
+        let _agentDraft = {};
 
         // === צבעים לפי שכונה ===
         function getNeighborhoodColor(neighborhood) {
@@ -612,9 +613,8 @@
                 _openPopupId = null;
                 const apt = apartments.find(a => a.id == id);
                 if (!apt) return;
-                // קרא את הטקסט מה-DOM לפני שנסגר
-                const el = document.getElementById(`agent-input-${id}`);
-                const newAgent = el ? el.textContent.trim() : apt.agent || '';
+                const newAgent = _agentDraft[id] !== undefined ? _agentDraft[id] : (apt.agent || '');
+                delete _agentDraft[id];
                 if (apt.agent === newAgent) return;
                 apt.agent = newAgent;
                 localStorage.setItem('shared_apartments', JSON.stringify(apartments));
@@ -752,7 +752,7 @@
                         <div style="font-size:0.8em;color:#888;margin-bottom:3px;">👤 סוכן מטפל:</div>
                         <div id="agent-input-${apt.id}" contenteditable="true"
                             style="border:1px solid #ddd;border-radius:5px;padding:6px 10px;font-size:0.9em;min-height:28px;outline:none;background:#f9f9f9;"
-                            onblur="saveAgent('${apt.id}')" onfocus="this.style.borderColor='#3498db';this.style.background='#fff'">${apt.agent || ''}</div>
+                            oninput="_agentDraft['${apt.id}']=this.textContent.trim()" onfocus="this.style.borderColor='#3498db';this.style.background='#fff'" onblur="this.style.borderColor='#ddd';this.style.background='#f9f9f9'">${apt.agent || ''}</div>
                     </div>
 
                     <div class="note-section">
