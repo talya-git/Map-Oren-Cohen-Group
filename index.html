@@ -775,9 +775,9 @@
         }
 
         function setFilter(filter) {
-            currentFilter = filter;.forEach(btn => btn.classList.remove('active'));
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
-            
             filterApartments();
         }
 
