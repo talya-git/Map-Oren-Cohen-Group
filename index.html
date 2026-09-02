@@ -720,6 +720,7 @@
                         <textarea id="note-input-${apt.id}" placeholder="הוסיפי הערה או מלל...">${apt.userNote || ''}</textarea>
                         ${apt.userNote ? `<div style="background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;margin-top:6px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;" id="note-display-${apt.id}">${apt.userNote}</div>` : `<div id="note-display-${apt.id}"></div>`}
                         <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 שמור הערה</button>
+                        <button class="save-note-btn" style="background:#e74c3c;margin-right:5px;" onclick="deleteNoteForApt('${apt.id}')">🗑️ מחק הערה</button>
                     </div>
                     <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;">
                         <button class="save-note-btn" style="background:${apt.status==='בלעדיות'?'#27ae60':'#9b59b6'};" onclick="toggleStatus('${apt.id}')">${apt.status==='בלעדיות'?'✓ בלעדיות':'✗ ללא בלעדיות'}</button>
@@ -799,9 +800,21 @@
             }
         }
 
+        async function deleteNoteForApt(id) {
+            const apt = apartments.find(a => a.id == id);
+            if (!apt) return;
+            apt.userNote = '';
+            localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+            await updateNote(id, '');
+            const textarea = document.getElementById(`note-input-${id}`);
+            if (textarea) textarea.value = '';
+            const noteDisplay = document.getElementById(`note-display-${id}`);
+            if (noteDisplay) { noteDisplay.textContent = ''; noteDisplay.style.cssText = ''; }
+            if (markers[id]) markers[id].setIcon(createCustomIcon(apt.neighborhood, false, apt.external, apt.sold));
+        }
+
         // === מחיקת דירה ===
         async function deleteApartment(id) {
-            if (!confirm('למחוק את הנכס הזה מהמפה?')) return;
             
             if (markers[id]) {
                 map.removeLayer(markers[id]);
