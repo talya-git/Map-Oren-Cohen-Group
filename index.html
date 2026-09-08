@@ -647,9 +647,10 @@
                         const saved = localStorage.getItem('shared_apartments');
                         const local = saved ? JSON.parse(saved) : [];
                         const noteMap = {};
+                        const notesListMap = {};
                         const agentMap = {};
-                        local.forEach(a => { if (a.userNote) noteMap[a.id] = a.userNote; if (a.agent) agentMap[a.id] = a.agent; });
-                        data.forEach(a => { if (noteMap[a.id]) a.userNote = noteMap[a.id]; if (agentMap[a.id]) a.agent = agentMap[a.id]; });
+                        local.forEach(a => { if (a.userNote) noteMap[a.id] = a.userNote; if (a.notes_list) notesListMap[a.id] = a.notes_list; if (a.agent) agentMap[a.id] = a.agent; });
+                        data.forEach(a => { if (noteMap[a.id]) a.userNote = noteMap[a.id]; if (notesListMap[a.id]) a.notes_list = notesListMap[a.id]; if (agentMap[a.id]) a.agent = agentMap[a.id]; });
                         return data;
                     }
                 }
@@ -756,10 +757,10 @@
                     </div>
 
                     <div class="note-section">
-                        <div style="font-size:0.8em;color:#888;margin-bottom:3px;">📝 הערה:</div>
-                        ${apt.userNote ? `<div style="display:flex;align-items:center;justify-content:space-between;background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;" id="note-display-${apt.id}"><span>${apt.userNote}</span><button onclick="deleteNoteForApt('${apt.id}')" style="background:none;border:none;cursor:pointer;font-size:1em;padding:0 4px;color:#e74c3c;">🗑️</button></div>` : `<div id="note-display-${apt.id}"></div>`}
-                        <textarea id="note-input-${apt.id}" placeholder="כתוב הערה..." style="margin-top:6px;">${apt.userNote ? '' : ''}</textarea>
-                        <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 שמור</button>
+                        <div style="font-size:0.8em;color:#888;margin-bottom:3px;">📝 הערות:</div>
+                        <div id="note-display-${apt.id}">${renderNotes(apt)}</div>
+                        <textarea id="note-input-${apt.id}" placeholder="כתוב הערה חדשה..." style="margin-top:6px;"></textarea>
+                        <button class="save-note-btn" onclick="saveNoteForApt('${apt.id}')">💾 הוסף הערה</button>
                     </div>
 
                     <div class="note-section" style="display:flex;gap:5px;flex-wrap:wrap;">
@@ -810,34 +811,59 @@
             filterApartments();
         }
 
+        // === רינדור הערות ===
+        function renderNotes(apt) {
+            const notes = apt.notes_list || (apt.userNote ? [{ text: apt.userNote, ts: '' }] : []);
+            if (!notes.length) return '';
+            return notes.map((n, i) => `
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;border-radius:4px;font-size:0.85em;color:#1a5c35;margin-bottom:4px;">
+                    <div><div style="font-weight:bold;">${n.text}</div>${n.ts ? `<div style="font-size:0.75em;color:#888;margin-top:2px;">${n.ts}</div>` : ''}</div>
+                    <button onclick="deleteNoteItem('${apt.id}',${i})" style="background:none;border:none;cursor:pointer;font-size:1em;padding:0 4px;color:#e74c3c;flex-shrink:0;">🗑️</button>
+                </div>
+            `).join('');
+        }
+
         // === שמירת הערה ===
         async function saveNoteForApt(id) {
             const textarea = document.getElementById(`note-input-${id}`);
             const text = textarea.value.trim();
-            
+            if (!text) return;
+
             const apt = apartments.find(a => a.id == id);
-            if (apt) {
-                apt.userNote = text;
-                localStorage.setItem('shared_apartments', JSON.stringify(apartments));
-                await updateNote(id, text);
+            if (!apt) return;
 
-                // עדכון אייקון מיידי
-                const hasSign = text.includes('שלט');
-                if (markers[id]) {
-                    markers[id].setIcon(createCustomIcon(apt.neighborhood, hasSign));
-                }
-
-                // עדכון תוכן הפופאפ מיידי
-                const noteDisplay = document.getElementById(`note-display-${id}`);
-                if (noteDisplay) {
-                    noteDisplay.innerHTML = `<span>${text}</span><button onclick="deleteNoteForApt('${id}')" style="background:none;border:none;cursor:pointer;font-size:1em;padding:0 4px;color:#e74c3c;">🗑️</button>`;
-                    noteDisplay.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:#eafaf1;border-right:3px solid #27ae60;padding:6px 10px;border-radius:4px;font-size:0.9em;color:#1a5c35;font-weight:bold;';
-                    document.getElementById(`note-input-${id}`).value = '';
-                }
-
-                const btn = document.querySelector(`[onclick="saveNoteForApt('${id}')"]`);
-                if (btn) { btn.textContent = '✓ נשמר!'; setTimeout(() => btn.textContent = '💾 שמור הערה', 2000); }
+            if (!apt.notes_list) {
+                apt.notes_list = apt.userNote ? [{ text: apt.userNote, ts: '' }] : [];
             }
+            const ts = new Date().toLocaleString('he-IL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+            apt.notes_list.push({ text, ts });
+            apt.userNote = apt.notes_list.map(n => n.text).join(' | ');
+
+            localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+            await updateNote(id, apt.userNote);
+
+            const hasSign = apt.userNote.includes('שלט');
+            if (markers[id]) markers[id].setIcon(createCustomIcon(apt.neighborhood, hasSign, apt.external, apt.sold));
+
+            const noteDisplay = document.getElementById(`note-display-${id}`);
+            if (noteDisplay) noteDisplay.innerHTML = renderNotes(apt);
+            textarea.value = '';
+
+            const btn = document.querySelector(`[onclick="saveNoteForApt('${id}')"]`);
+            if (btn) { btn.textContent = '✓ נוסף!'; setTimeout(() => btn.textContent = '💾 הוסף הערה', 2000); }
+        }
+
+        async function deleteNoteItem(id, index) {
+            const apt = apartments.find(a => a.id == id);
+            if (!apt) return;
+            if (!apt.notes_list) apt.notes_list = apt.userNote ? [{ text: apt.userNote, ts: '' }] : [];
+            apt.notes_list.splice(index, 1);
+            apt.userNote = apt.notes_list.map(n => n.text).join(' | ');
+            localStorage.setItem('shared_apartments', JSON.stringify(apartments));
+            await updateNote(id, apt.userNote);
+            const noteDisplay = document.getElementById(`note-display-${id}`);
+            if (noteDisplay) noteDisplay.innerHTML = renderNotes(apt);
+            if (markers[id]) markers[id].setIcon(createCustomIcon(apt.neighborhood, apt.userNote.includes('שלט'), apt.external, apt.sold));
         }
 
         async function saveAgent(id) {
@@ -861,12 +887,13 @@
             const apt = apartments.find(a => a.id == id);
             if (!apt) return;
             apt.userNote = '';
+            apt.notes_list = [];
             localStorage.setItem('shared_apartments', JSON.stringify(apartments));
             await updateNote(id, '');
             const textarea = document.getElementById(`note-input-${id}`);
             if (textarea) textarea.value = '';
             const noteDisplay = document.getElementById(`note-display-${id}`);
-            if (noteDisplay) { noteDisplay.textContent = ''; noteDisplay.style.cssText = ''; }
+            if (noteDisplay) noteDisplay.innerHTML = '';
             if (markers[id]) markers[id].setIcon(createCustomIcon(apt.neighborhood, false, apt.external, apt.sold));
         }
 
